@@ -1,0 +1,25 @@
+# Dedicated test database; never point tests at the campaign database.
+services:
+  test-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: firmware_test
+      POSTGRES_USER: firmware
+      POSTGRES_PASSWORD: firmware-test-only
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U firmware -d firmware_test"]
+      interval: 1s
+      timeout: 5s
+      retries: 30
+  tests:
+    build:
+      context: .
+      target: test
+    environment:
+      TEST_DATABASE_URL: postgresql+asyncpg://firmware:firmware-test-only@test-db:5432/firmware_test
+    command: ["pytest", "-q"]
+    depends_on:
+      test-db:
+        condition: service_healthy

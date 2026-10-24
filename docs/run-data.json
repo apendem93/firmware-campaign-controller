@@ -1,0 +1,1034 @@
+{
+  "startedAt": "2026-10-24T20:42:03.489813+00:00",
+  "samples": [
+    {
+      "elapsedSeconds": 0.284,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 1000,
+        "NOTIFIED": 0,
+        "DOWNLOAD_ISSUED": 0,
+        "AWAITING_RESULT": 0,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 0,
+        "FAILED": 0,
+        "TIMED_OUT": 0
+      },
+      "slotsHeld": 0
+    },
+    {
+      "elapsedSeconds": 2.73,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 961,
+        "NOTIFIED": 2,
+        "DOWNLOAD_ISSUED": 10,
+        "AWAITING_RESULT": 23,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 2,
+        "FAILED": 2,
+        "TIMED_OUT": 0
+      },
+      "slotsHeld": 35
+    },
+    {
+      "elapsedSeconds": 4.991,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 923,
+        "NOTIFIED": 2,
+        "DOWNLOAD_ISSUED": 0,
+        "AWAITING_RESULT": 50,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 20,
+        "FAILED": 5,
+        "TIMED_OUT": 0
+      },
+      "slotsHeld": 52
+    },
+    {
+      "elapsedSeconds": 8.086,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 885,
+        "NOTIFIED": 13,
+        "DOWNLOAD_ISSUED": 8,
+        "AWAITING_RESULT": 36,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 50,
+        "FAILED": 7,
+        "TIMED_OUT": 1
+      },
+      "slotsHeld": 57
+    },
+    {
+      "elapsedSeconds": 10.36,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 866,
+        "NOTIFIED": 2,
+        "DOWNLOAD_ISSUED": 8,
+        "AWAITING_RESULT": 30,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 81,
+        "FAILED": 11,
+        "TIMED_OUT": 2
+      },
+      "slotsHeld": 40
+    },
+    {
+      "elapsedSeconds": 15.314,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 808,
+        "NOTIFIED": 19,
+        "DOWNLOAD_ISSUED": 3,
+        "AWAITING_RESULT": 37,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 111,
+        "FAILED": 19,
+        "TIMED_OUT": 3
+      },
+      "slotsHeld": 59
+    },
+    {
+      "elapsedSeconds": 17.712,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 790,
+        "NOTIFIED": 2,
+        "DOWNLOAD_ISSUED": 6,
+        "AWAITING_RESULT": 37,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 142,
+        "FAILED": 19,
+        "TIMED_OUT": 4
+      },
+      "slotsHeld": 45
+    },
+    {
+      "elapsedSeconds": 20.213,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 772,
+        "NOTIFIED": 2,
+        "DOWNLOAD_ISSUED": 3,
+        "AWAITING_RESULT": 40,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 158,
+        "FAILED": 21,
+        "TIMED_OUT": 4
+      },
+      "slotsHeld": 45
+    },
+    {
+      "elapsedSeconds": 22.756,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 732,
+        "NOTIFIED": 12,
+        "DOWNLOAD_ISSUED": 8,
+        "AWAITING_RESULT": 40,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 181,
+        "FAILED": 21,
+        "TIMED_OUT": 6
+      },
+      "slotsHeld": 60
+    },
+    {
+      "elapsedSeconds": 24.792,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 693,
+        "NOTIFIED": 20,
+        "DOWNLOAD_ISSUED": 0,
+        "AWAITING_RESULT": 47,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 210,
+        "FAILED": 24,
+        "TIMED_OUT": 6
+      },
+      "slotsHeld": 67
+    },
+    {
+      "elapsedSeconds": 27.558,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 674,
+        "NOTIFIED": 2,
+        "DOWNLOAD_ISSUED": 17,
+        "AWAITING_RESULT": 43,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 230,
+        "FAILED": 28,
+        "TIMED_OUT": 6
+      },
+      "slotsHeld": 62
+    },
+    {
+      "elapsedSeconds": 29.938,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 637,
+        "NOTIFIED": 4,
+        "DOWNLOAD_ISSUED": 8,
+        "AWAITING_RESULT": 52,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 258,
+        "FAILED": 34,
+        "TIMED_OUT": 7
+      },
+      "slotsHeld": 64
+    },
+    {
+      "elapsedSeconds": 32.934,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 619,
+        "NOTIFIED": 3,
+        "DOWNLOAD_ISSUED": 11,
+        "AWAITING_RESULT": 31,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 293,
+        "FAILED": 35,
+        "TIMED_OUT": 8
+      },
+      "slotsHeld": 45
+    },
+    {
+      "elapsedSeconds": 35.32,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 599,
+        "NOTIFIED": 2,
+        "DOWNLOAD_ISSUED": 9,
+        "AWAITING_RESULT": 33,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 310,
+        "FAILED": 36,
+        "TIMED_OUT": 11
+      },
+      "slotsHeld": 44
+    },
+    {
+      "elapsedSeconds": 37.34,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 599,
+        "NOTIFIED": 2,
+        "DOWNLOAD_ISSUED": 0,
+        "AWAITING_RESULT": 26,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 326,
+        "FAILED": 36,
+        "TIMED_OUT": 11
+      },
+      "slotsHeld": 28
+    },
+    {
+      "elapsedSeconds": 39.515,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 561,
+        "NOTIFIED": 20,
+        "DOWNLOAD_ISSUED": 0,
+        "AWAITING_RESULT": 37,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 333,
+        "FAILED": 36,
+        "TIMED_OUT": 13
+      },
+      "slotsHeld": 57
+    },
+    {
+      "elapsedSeconds": 41.955,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 541,
+        "NOTIFIED": 5,
+        "DOWNLOAD_ISSUED": 15,
+        "AWAITING_RESULT": 39,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 349,
+        "FAILED": 38,
+        "TIMED_OUT": 13
+      },
+      "slotsHeld": 59
+    },
+    {
+      "elapsedSeconds": 44.095,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 505,
+        "NOTIFIED": 4,
+        "DOWNLOAD_ISSUED": 0,
+        "AWAITING_RESULT": 66,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 373,
+        "FAILED": 39,
+        "TIMED_OUT": 13
+      },
+      "slotsHeld": 70
+    },
+    {
+      "elapsedSeconds": 46.731,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 470,
+        "NOTIFIED": 13,
+        "DOWNLOAD_ISSUED": 8,
+        "AWAITING_RESULT": 50,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 402,
+        "FAILED": 44,
+        "TIMED_OUT": 13
+      },
+      "slotsHeld": 71
+    },
+    {
+      "elapsedSeconds": 48.937,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 436,
+        "NOTIFIED": 6,
+        "DOWNLOAD_ISSUED": 3,
+        "AWAITING_RESULT": 62,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 427,
+        "FAILED": 49,
+        "TIMED_OUT": 17
+      },
+      "slotsHeld": 71
+    },
+    {
+      "elapsedSeconds": 50.947,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 402,
+        "NOTIFIED": 7,
+        "DOWNLOAD_ISSUED": 0,
+        "AWAITING_RESULT": 72,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 448,
+        "FAILED": 53,
+        "TIMED_OUT": 18
+      },
+      "slotsHeld": 79
+    },
+    {
+      "elapsedSeconds": 52.957,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 366,
+        "NOTIFIED": 9,
+        "DOWNLOAD_ISSUED": 0,
+        "AWAITING_RESULT": 73,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 472,
+        "FAILED": 60,
+        "TIMED_OUT": 20
+      },
+      "slotsHeld": 82
+    },
+    {
+      "elapsedSeconds": 55.022,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 331,
+        "NOTIFIED": 5,
+        "DOWNLOAD_ISSUED": 0,
+        "AWAITING_RESULT": 73,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 503,
+        "FAILED": 64,
+        "TIMED_OUT": 24
+      },
+      "slotsHeld": 78
+    },
+    {
+      "elapsedSeconds": 57.58,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 274,
+        "NOTIFIED": 21,
+        "DOWNLOAD_ISSUED": 11,
+        "AWAITING_RESULT": 67,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 534,
+        "FAILED": 64,
+        "TIMED_OUT": 29
+      },
+      "slotsHeld": 99
+    },
+    {
+      "elapsedSeconds": 59.884,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 255,
+        "NOTIFIED": 1,
+        "DOWNLOAD_ISSUED": 1,
+        "AWAITING_RESULT": 78,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 567,
+        "FAILED": 69,
+        "TIMED_OUT": 29
+      },
+      "slotsHeld": 80
+    },
+    {
+      "elapsedSeconds": 61.926,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 217,
+        "NOTIFIED": 4,
+        "DOWNLOAD_ISSUED": 0,
+        "AWAITING_RESULT": 80,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 596,
+        "FAILED": 73,
+        "TIMED_OUT": 30
+      },
+      "slotsHeld": 84
+    },
+    {
+      "elapsedSeconds": 64.269,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 185,
+        "NOTIFIED": 4,
+        "DOWNLOAD_ISSUED": 10,
+        "AWAITING_RESULT": 67,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 627,
+        "FAILED": 77,
+        "TIMED_OUT": 30
+      },
+      "slotsHeld": 81
+    },
+    {
+      "elapsedSeconds": 66.318,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 147,
+        "NOTIFIED": 3,
+        "DOWNLOAD_ISSUED": 0,
+        "AWAITING_RESULT": 72,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 658,
+        "FAILED": 88,
+        "TIMED_OUT": 32
+      },
+      "slotsHeld": 75
+    },
+    {
+      "elapsedSeconds": 68.528,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 108,
+        "NOTIFIED": 3,
+        "DOWNLOAD_ISSUED": 0,
+        "AWAITING_RESULT": 75,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 689,
+        "FAILED": 91,
+        "TIMED_OUT": 34
+      },
+      "slotsHeld": 78
+    },
+    {
+      "elapsedSeconds": 70.66,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 72,
+        "NOTIFIED": 2,
+        "DOWNLOAD_ISSUED": 0,
+        "AWAITING_RESULT": 84,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 713,
+        "FAILED": 94,
+        "TIMED_OUT": 35
+      },
+      "slotsHeld": 86
+    },
+    {
+      "elapsedSeconds": 72.763,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 33,
+        "NOTIFIED": 3,
+        "DOWNLOAD_ISSUED": 0,
+        "AWAITING_RESULT": 88,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 741,
+        "FAILED": 100,
+        "TIMED_OUT": 35
+      },
+      "slotsHeld": 91
+    },
+    {
+      "elapsedSeconds": 74.77,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 0,
+        "NOTIFIED": 3,
+        "DOWNLOAD_ISSUED": 0,
+        "AWAITING_RESULT": 78,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 779,
+        "FAILED": 103,
+        "TIMED_OUT": 37
+      },
+      "slotsHeld": 81
+    },
+    {
+      "elapsedSeconds": 76.777,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 0,
+        "NOTIFIED": 2,
+        "DOWNLOAD_ISSUED": 0,
+        "AWAITING_RESULT": 59,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 796,
+        "FAILED": 105,
+        "TIMED_OUT": 38
+      },
+      "slotsHeld": 61
+    },
+    {
+      "elapsedSeconds": 78.786,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 0,
+        "NOTIFIED": 0,
+        "DOWNLOAD_ISSUED": 0,
+        "AWAITING_RESULT": 42,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 813,
+        "FAILED": 105,
+        "TIMED_OUT": 40
+      },
+      "slotsHeld": 42
+    },
+    {
+      "elapsedSeconds": 80.794,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 0,
+        "NOTIFIED": 0,
+        "DOWNLOAD_ISSUED": 0,
+        "AWAITING_RESULT": 42,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 813,
+        "FAILED": 105,
+        "TIMED_OUT": 40
+      },
+      "slotsHeld": 42
+    },
+    {
+      "elapsedSeconds": 82.815,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 0,
+        "NOTIFIED": 0,
+        "DOWNLOAD_ISSUED": 0,
+        "AWAITING_RESULT": 39,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 813,
+        "FAILED": 108,
+        "TIMED_OUT": 40
+      },
+      "slotsHeld": 39
+    },
+    {
+      "elapsedSeconds": 84.822,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 0,
+        "NOTIFIED": 0,
+        "DOWNLOAD_ISSUED": 0,
+        "AWAITING_RESULT": 38,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 813,
+        "FAILED": 109,
+        "TIMED_OUT": 40
+      },
+      "slotsHeld": 38
+    },
+    {
+      "elapsedSeconds": 86.838,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 0,
+        "NOTIFIED": 0,
+        "DOWNLOAD_ISSUED": 0,
+        "AWAITING_RESULT": 38,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 813,
+        "FAILED": 109,
+        "TIMED_OUT": 40
+      },
+      "slotsHeld": 38
+    },
+    {
+      "elapsedSeconds": 88.847,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 0,
+        "NOTIFIED": 0,
+        "DOWNLOAD_ISSUED": 0,
+        "AWAITING_RESULT": 38,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 813,
+        "FAILED": 109,
+        "TIMED_OUT": 40
+      },
+      "slotsHeld": 38
+    },
+    {
+      "elapsedSeconds": 90.879,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 0,
+        "NOTIFIED": 0,
+        "DOWNLOAD_ISSUED": 0,
+        "AWAITING_RESULT": 35,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 813,
+        "FAILED": 112,
+        "TIMED_OUT": 40
+      },
+      "slotsHeld": 35
+    },
+    {
+      "elapsedSeconds": 92.889,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 0,
+        "NOTIFIED": 0,
+        "DOWNLOAD_ISSUED": 0,
+        "AWAITING_RESULT": 34,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 813,
+        "FAILED": 113,
+        "TIMED_OUT": 40
+      },
+      "slotsHeld": 34
+    },
+    {
+      "elapsedSeconds": 94.897,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 0,
+        "NOTIFIED": 0,
+        "DOWNLOAD_ISSUED": 0,
+        "AWAITING_RESULT": 32,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 813,
+        "FAILED": 115,
+        "TIMED_OUT": 40
+      },
+      "slotsHeld": 32
+    },
+    {
+      "elapsedSeconds": 96.908,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 0,
+        "NOTIFIED": 0,
+        "DOWNLOAD_ISSUED": 0,
+        "AWAITING_RESULT": 32,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 813,
+        "FAILED": 115,
+        "TIMED_OUT": 40
+      },
+      "slotsHeld": 32
+    },
+    {
+      "elapsedSeconds": 98.916,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 0,
+        "NOTIFIED": 0,
+        "DOWNLOAD_ISSUED": 0,
+        "AWAITING_RESULT": 31,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 813,
+        "FAILED": 116,
+        "TIMED_OUT": 40
+      },
+      "slotsHeld": 31
+    },
+    {
+      "elapsedSeconds": 100.924,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 0,
+        "NOTIFIED": 0,
+        "DOWNLOAD_ISSUED": 0,
+        "AWAITING_RESULT": 30,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 813,
+        "FAILED": 117,
+        "TIMED_OUT": 40
+      },
+      "slotsHeld": 30
+    },
+    {
+      "elapsedSeconds": 102.931,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 0,
+        "NOTIFIED": 0,
+        "DOWNLOAD_ISSUED": 0,
+        "AWAITING_RESULT": 27,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 813,
+        "FAILED": 120,
+        "TIMED_OUT": 40
+      },
+      "slotsHeld": 27
+    },
+    {
+      "elapsedSeconds": 104.947,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 0,
+        "NOTIFIED": 0,
+        "DOWNLOAD_ISSUED": 0,
+        "AWAITING_RESULT": 25,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 813,
+        "FAILED": 122,
+        "TIMED_OUT": 40
+      },
+      "slotsHeld": 25
+    },
+    {
+      "elapsedSeconds": 106.962,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 0,
+        "NOTIFIED": 0,
+        "DOWNLOAD_ISSUED": 0,
+        "AWAITING_RESULT": 25,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 813,
+        "FAILED": 122,
+        "TIMED_OUT": 40
+      },
+      "slotsHeld": 25
+    },
+    {
+      "elapsedSeconds": 108.97,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 0,
+        "NOTIFIED": 0,
+        "DOWNLOAD_ISSUED": 0,
+        "AWAITING_RESULT": 23,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 813,
+        "FAILED": 124,
+        "TIMED_OUT": 40
+      },
+      "slotsHeld": 23
+    },
+    {
+      "elapsedSeconds": 110.977,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 0,
+        "NOTIFIED": 0,
+        "DOWNLOAD_ISSUED": 0,
+        "AWAITING_RESULT": 21,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 813,
+        "FAILED": 126,
+        "TIMED_OUT": 40
+      },
+      "slotsHeld": 21
+    },
+    {
+      "elapsedSeconds": 112.987,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 0,
+        "NOTIFIED": 0,
+        "DOWNLOAD_ISSUED": 0,
+        "AWAITING_RESULT": 21,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 813,
+        "FAILED": 126,
+        "TIMED_OUT": 40
+      },
+      "slotsHeld": 21
+    },
+    {
+      "elapsedSeconds": 114.995,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 0,
+        "NOTIFIED": 0,
+        "DOWNLOAD_ISSUED": 0,
+        "AWAITING_RESULT": 18,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 813,
+        "FAILED": 129,
+        "TIMED_OUT": 40
+      },
+      "slotsHeld": 18
+    },
+    {
+      "elapsedSeconds": 117.016,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 0,
+        "NOTIFIED": 0,
+        "DOWNLOAD_ISSUED": 0,
+        "AWAITING_RESULT": 16,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 813,
+        "FAILED": 131,
+        "TIMED_OUT": 40
+      },
+      "slotsHeld": 16
+    },
+    {
+      "elapsedSeconds": 119.023,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 0,
+        "NOTIFIED": 0,
+        "DOWNLOAD_ISSUED": 0,
+        "AWAITING_RESULT": 15,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 813,
+        "FAILED": 132,
+        "TIMED_OUT": 40
+      },
+      "slotsHeld": 15
+    },
+    {
+      "elapsedSeconds": 121.034,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 0,
+        "NOTIFIED": 0,
+        "DOWNLOAD_ISSUED": 0,
+        "AWAITING_RESULT": 14,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 813,
+        "FAILED": 133,
+        "TIMED_OUT": 40
+      },
+      "slotsHeld": 14
+    },
+    {
+      "elapsedSeconds": 123.041,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 0,
+        "NOTIFIED": 0,
+        "DOWNLOAD_ISSUED": 0,
+        "AWAITING_RESULT": 13,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 813,
+        "FAILED": 134,
+        "TIMED_OUT": 40
+      },
+      "slotsHeld": 13
+    },
+    {
+      "elapsedSeconds": 125.051,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 0,
+        "NOTIFIED": 0,
+        "DOWNLOAD_ISSUED": 0,
+        "AWAITING_RESULT": 11,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 813,
+        "FAILED": 136,
+        "TIMED_OUT": 40
+      },
+      "slotsHeld": 11
+    },
+    {
+      "elapsedSeconds": 127.061,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 0,
+        "NOTIFIED": 0,
+        "DOWNLOAD_ISSUED": 0,
+        "AWAITING_RESULT": 8,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 813,
+        "FAILED": 139,
+        "TIMED_OUT": 40
+      },
+      "slotsHeld": 8
+    },
+    {
+      "elapsedSeconds": 129.068,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 0,
+        "NOTIFIED": 0,
+        "DOWNLOAD_ISSUED": 0,
+        "AWAITING_RESULT": 6,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 813,
+        "FAILED": 141,
+        "TIMED_OUT": 40
+      },
+      "slotsHeld": 6
+    },
+    {
+      "elapsedSeconds": 131.075,
+      "status": "RUNNING",
+      "counts": {
+        "PENDING": 0,
+        "NOTIFIED": 0,
+        "DOWNLOAD_ISSUED": 0,
+        "AWAITING_RESULT": 5,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 813,
+        "FAILED": 142,
+        "TIMED_OUT": 40
+      },
+      "slotsHeld": 5
+    },
+    {
+      "elapsedSeconds": 133.725,
+      "status": "COMPLETED",
+      "counts": {
+        "PENDING": 0,
+        "NOTIFIED": 0,
+        "DOWNLOAD_ISSUED": 0,
+        "AWAITING_RESULT": 0,
+        "OUTCOME_UNKNOWN": 0,
+        "SUCCEEDED": 813,
+        "FAILED": 147,
+        "TIMED_OUT": 40
+      },
+      "slotsHeld": 0
+    }
+  ],
+  "restart": {
+    "requestedAtSeconds": 12.36,
+    "completedAtSeconds": 13.282
+  },
+  "campaignId": "a750fc49-4de3-4ed5-928e-4dd3c10e8ae9",
+  "final": {
+    "id": "a750fc49-4de3-4ed5-928e-4dd3c10e8ae9",
+    "status": "COMPLETED",
+    "haltReason": null,
+    "targetVersion": "2.0.0",
+    "totalDevices": 1000,
+    "counts": {
+      "PENDING": 0,
+      "NOTIFIED": 0,
+      "DOWNLOAD_ISSUED": 0,
+      "AWAITING_RESULT": 0,
+      "OUTCOME_UNKNOWN": 0,
+      "SUCCEEDED": 813,
+      "FAILED": 147,
+      "TIMED_OUT": 40
+    },
+    "slotsHeld": 0,
+    "maxConcurrent": 100,
+    "resolvedCount": 1000,
+    "failureRate": 18.7,
+    "failureThresholdPercent": 100.0,
+    "failureGate": {
+      "epoch": 0,
+      "minimumSample": 20,
+      "sampleSize": 1000,
+      "failureRate": 18.7
+    },
+    "config": {
+      "ack_timeout": 5.0,
+      "http_timeout": 5.0,
+      "lease_seconds": 15.0,
+      "nudge_backoff": 0.5,
+      "inform_timeout": 5.0,
+      "minimum_sample": 20,
+      "nudge_attempts": 3,
+      "result_timeout": 60.0,
+      "scheduler_interval": 0.1,
+      "verification_grace": 3.0,
+      "max_http_concurrency": 20
+    },
+    "createdAt": "2026-10-24T20:42:03.561719+00:00",
+    "completedAt": "2026-10-24T20:44:16.571368+00:00"
+  },
+  "elapsedSeconds": 133.725,
+  "maxObservedSlots": 99,
+  "finishedAt": "2026-10-24T20:44:17.214735+00:00",
+  "validation": {
+    "maximumSlotsFromAudit": 100,
+    "minimumSlotsFromAudit": 0,
+    "duplicateDownloadAuthorizations": 0,
+    "timeoutsWithoutNudgeAttempt": 0,
+    "maximumNudgeAttempts": 3,
+    "commandIdentityMismatches": 0,
+    "unknownOutcomeTransitions": 0,
+    "outcomesByEvidence": [
+      {
+        "state": "FAILED",
+        "evidence": "ack",
+        "count": 59
+      },
+      {
+        "state": "FAILED",
+        "evidence": "boot_inferred",
+        "count": 50
+      },
+      {
+        "state": "FAILED",
+        "evidence": "transfer_complete",
+        "count": 38
+      },
+      {
+        "state": "SUCCEEDED",
+        "evidence": "boot_inferred",
+        "count": 70
+      },
+      {
+        "state": "SUCCEEDED",
+        "evidence": "transfer_complete",
+        "count": 743
+      },
+      {
+        "state": "TIMED_OUT",
+        "evidence": "deadline",
+        "count": 40
+      }
+    ],
+    "simulator": {
+      "seed": 42,
+      "deviceCount": 1000,
+      "scenarios": {
+        "late": 17,
+        "boot_only": 53,
+        "normal": 706,
+        "offline": 40,
+        "reject": 59,
+        "old_boot": 50,
+        "fault": 38,
+        "duplicate": 37
+      },
+      "versions": {
+        "2.0.0": 813,
+        "1.0.0": 187
+      },
+      "downloadsStarted": 901,
+      "activeDownloads": 0
+    },
+    "apiAndWorkerMetricsVerified": true,
+    "testsPassed": 53
+  }
+}

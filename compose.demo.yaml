@@ -1,0 +1,14 @@
+# Accelerated timing for demonstrations only; keep the regular profile for external simulators.
+services:
+  migrate:
+    volumes:
+      - ./config.demo.yaml:/app/config.yaml:ro
+  api:
+    volumes:
+      - ./config.demo.yaml:/app/config.yaml:ro
+  worker:
+    volumes:
+      - ./config.demo.yaml:/app/config.yaml:ro
+  simulator:
+    environment:
+      SIMULATOR_TIME_SCALE: "0.02"

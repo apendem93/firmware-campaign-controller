@@ -1,0 +1,84 @@
+name: firmware-campaign
+
+x-app: &app
+  image: firmware-campaign:local
+  build: .
+  init: true
+  environment: &controller-env
+    DATABASE_URL: postgresql+asyncpg://firmware:${POSTGRES_PASSWORD:-firmware-local-only}@postgres:5432/firmware
+    SIMULATOR_URL: ${SIMULATOR_URL:-http://simulator:8001}
+    CONFIG_FILE: /app/config.yaml
+  volumes:
+    - ./config.yaml:/app/config.yaml:ro
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: firmware
+      POSTGRES_USER: firmware
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-firmware-local-only}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U firmware -d firmware"]
+      interval: 2s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  migrate:
+    <<: *app
+    command: ["alembic", "upgrade", "head"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    <<: *app
+    command: ["uvicorn", "controller.api:app", "--host", "0.0.0.0", "--port", "8000"]
+    ports:
+      - "127.0.0.1:${CONTROLLER_PORT:-8000}:8000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/readyz', timeout=3)"]
+      interval: 5s
+      timeout: 4s
+      retries: 20
+    restart: unless-stopped
+
+  worker:
+    <<: *app
+    command: ["python", "-m", "controller.worker"]
+    ports:
+      - "127.0.0.1:${WORKER_METRICS_PORT:-9001}:9001"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+  simulator:
+    <<: *app
+    command: ["uvicorn", "simulator.app:app", "--host", "0.0.0.0", "--port", "8001"]
+    environment:
+      CONTROLLER_URL: http://api:8000
+      DEVICE_COUNT: ${DEVICE_COUNT:-1000}
+      SIMULATOR_SEED: ${SIMULATOR_SEED:-42}
+      SIMULATOR_TIME_SCALE: ${SIMULATOR_TIME_SCALE:-1}
+    ports:
+      - "127.0.0.1:${SIMULATOR_PORT:-8001}:8001"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/healthz', timeout=3)"]
+      interval: 5s
+      timeout: 4s
+      retries: 20
+    restart: unless-stopped
+
+volumes:
+  postgres-data:

@@ -1,0 +1,12 @@
+# Accelerated local simulator profile; do not use with real device timings.
+scheduler_interval: 0.1
+http_timeout: 5.0
+nudge_attempts: 3
+nudge_backoff: 0.5
+inform_timeout: 5.0
+ack_timeout: 5.0
+result_timeout: 60.0
+verification_grace: 3.0
+lease_seconds: 15.0
+minimum_sample: 20
+max_http_concurrency: 20

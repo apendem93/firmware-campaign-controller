@@ -1,0 +1,12 @@
+# All durations are seconds. Campaigns snapshot these values at creation.
+scheduler_interval: 1.0
+http_timeout: 5.0
+nudge_attempts: 3
+nudge_backoff: 5.0
+inform_timeout: 90.0
+ack_timeout: 30.0
+result_timeout: 900.0
+verification_grace: 30.0
+lease_seconds: 15.0
+minimum_sample: 20
+max_http_concurrency: 20

@@ -1,0 +1,13 @@
+# Scaling to 5, 10, or 15 million devices
+
+The assignment uses one campaign-row lock. At national scale, replace that coordination boundary while retaining durable command identity, explicit evidence, and conservative handling of uncertainty.
+
+**Capacity.** For an illustrative 24-hour rollout, 5/10/15 million devices require roughly 58/116/174 completions per second. Assuming five-minute upgrades, Little's Law implies 17,400/34,800/52,200 concurrent operations before headroom. These are planning assumptions, not measurements or safe network limits. Maintenance windows, cohorts, callbacks, retries, and bursts determine actual provisioning.
+
+**Partition execution.** Assign devices to stable hash partitions within regional/vendor cohorts. Run stateless callback APIs behind load balancers. Replace the global lock with partition transactions and allocated concurrency budgets whose sum never exceeds the campaign limit. Budget reassignment requires fencing; a controller lease expiring does not mean a device operation ended. Preserve device exclusivity across campaigns. Use staged canaries and cohort-specific failure gates.
+
+**Communication.** Existing outbound device sessions or authenticated MQTT-style connections can deliver nudges more efficiently than millions of HTTP calls. Retain HTTP adapters where required. Use transactional outboxes and partitioned messaging for durable, at-least-once delivery with idempotent consumers. Brokers do not make firmware installation exactly-once. Require device-side key deduplication, operation-status lookup, and command IDs in BOOT before supporting safe retransmission or stronger physical concurrency guarantees.
+
+**State and reporting.** Partition current attempts by device/campaign. Keep immutable events in a partitioned log and archive older payloads to object storage under explicit retention. Incrementally aggregate counts by campaign, region, model, state, and evidence rather than scanning millions of rows per dashboard request. Provide device/key drill-down and exports. Rebuild aggregates from events and reconcile against operational state. Distinguish confirmed, inferred, unresolved, and contradictory outcomes.
+
+**Operations.** Add authenticated operator/device identities, authorization, signed-image and compatibility checks, staged approvals, regional rate limits, dead-letter inspection, backup/restore drills, and disaster recovery. Monitor callback delay, backlog age, slot utilization, evidence quality, failure reasons, and recovery time. Keep IDs out of metric labels. Firmware rollback requires an explicit device capability and separate campaign policy.
