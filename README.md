@@ -1,6 +1,8 @@
 # Firmware Campaign Controller
 
-Python/FastAPI, PostgreSQL, a separate scheduler worker, and an independent seeded simulator. The controller implements the assignment REST/JSON contract; AT&T's simulator can replace the local simulator without controller changes.
+Python/FastAPI, PostgreSQL, a separate scheduler worker, and the **supplied assignment simulator**. Docker Compose runs `scripts/fw_simulator.py`, preserved byte-for-byte from the uploaded `device_simulator.txt`. The controller depends on the published REST/JSON contract, not simulator internals or interviewer-only ground truth.
+
+[The simulator integration guide](docs/simulator-integration.md) explains its functions, profiles, request flow, timing limits, and the corresponding controller code. The older independently written simulator remains an optional regression fixture in `simulator/`; it is no longer the Compose default.
 
 ## Run
 
@@ -13,13 +15,21 @@ docker compose ps
 
 Compose migrates the database before starting the API, worker, and simulator. Controller port 8000 provides `/docs`, `/healthz`, `/readyz`, and `/metrics`. Simulator port is 8001; worker metrics port is 9001.
 
-For an accelerated local demo, start with this configuration instead:
+For an accelerated run with the raw supplied behavior, start with this configuration instead:
 
 ```sh
 docker compose -f compose.yaml -f compose.demo.yaml up --build -d
 ```
 
-The demo shortens deadlines and sets simulator time scale to 0.02. Use normal configuration for external simulators whose reboots can take minutes.
+The raw simulator has a reproduced defect: its duplicate-inform callback discards commands in the HTTP response. For a complete local mixed-fleet demonstration, an opt-in simulator-only adapter consumes those commands through the original download handler:
+
+```sh
+docker compose -f compose.yaml -f compose.demo.yaml -f compose.simulator-fix.yaml up --build -d
+```
+
+The adapter leaves the supplied file byte-for-byte unchanged. It does not add callback retries, command-key deduplication, or change probabilities, timing, or firmware behavior. The raw two-file command remains available for evaluator parity. See [the precise correction and its limits](docs/simulator-integration.md#optional-duplicate-response-correction). Use a fresh project/volume when switching scenarios: restarting the simulator resets its fleet, while PostgreSQL retains campaign history.
+
+The demo changes only supported environment settings: download 0–1 seconds, reboot 1–3 seconds, periodic informs every 30 seconds, and late completion delay 60 seconds. Duplicate and late-callback probabilities remain enabled. Its controller result deadline is 120 seconds; reverted devices deliberately wait that deadline before failure classification. The standard profile preserves the supplied defaults (download up to 20 seconds, reboot up to 240 seconds, late delay up to 600 seconds) and uses a 900-second result deadline. Use the standard profile for realistic evaluator timings.
 
 ```sh
 curl -fsS http://127.0.0.1:8000/campaigns \
@@ -27,9 +37,11 @@ curl -fsS http://127.0.0.1:8000/campaigns \
   -d '{"targetVersion":"2.0.0","imageUrl":"https://firmware.example/2.0.0.bin","deviceFilter":{"currentVersion":"1.0.0"},"maxConcurrent":100,"failureThresholdPercent":100}'
 ```
 
-The image URL is a placeholder: the local simulator models downloads without fetching images. Supply a real URL when external devices fetch firmware. The 100% threshold permits a full diagnostic run; use a lower threshold for a guarded rollout.
+The image URL is a placeholder: the supplied simulator models download/reboot delays without fetching images. Supply a real URL when external devices fetch firmware. The 100% threshold permits a full diagnostic run; use a lower threshold for a guarded rollout.
 
-Use the returned ID with `GET /campaigns/{id}`, `POST /campaigns/{id}/pause`, and `POST /campaigns/{id}/resume`. Inspect devices with `GET /campaigns/{id}/devices?state=FAILED&limit=100`, passing `nextCursor` as `cursor` for subsequent pages.
+Use the returned ID with `GET /campaigns/{id}`, `POST /campaigns/{id}/pause`, and `POST /campaigns/{id}/resume`. Inspect devices with `GET /campaigns/{id}/devices?state=FAILED&limit=100`, passing `nextCursor` as `cursor` for subsequent pages. Device diagnostics include `faultCode`, `lastBootVersion`, `dispatchedAt`, `resultDeadline`, and `finishedAt` alongside state, reason, and evidence.
+
+Read the persisted audit history using `GET /campaigns/{id}/events?deviceId=GW-...&commandKey=...&after=0&limit=100`. Device/key filters are optional. This endpoint is read-only, returns at most 500 events per page, and orders events by database ID. Pass its `nextCursor` as `after` to read the next page. Payloads show acknowledgment reasons, completion faults, and the transitions used to derive the current outcome.
 
 With Python 3.12 and uv, a runner creates a campaign, checks sampled concurrency and totals, and saves a report:
 
@@ -38,13 +50,27 @@ uv sync --frozen
 uv run python scripts/run_campaign.py --output reports/campaign.json
 ```
 
-For a process-restart exercise on a fresh local fleet:
+To monitor an existing campaign without creating another, replace `CAMPAIGN_ID` with its ID:
 
 ```sh
-uv run python scripts/run_campaign.py --restart-after 12 --output reports/restart.json
+uv run python scripts/run_campaign.py --campaign-id CAMPAIGN_ID --halt-drain-seconds 120 --output reports/observed-campaign.json
 ```
 
-This restarts only API and worker, leaving the simulator and database running. The runner saves halted results and never automatically resumes a safety halt. Simulator state is in memory: restarting it resets firmware versions. PostgreSQL's named volume retains campaigns. `docker compose down` preserves that volume; use `down -v` only when intentionally discarding campaign history.
+`--halt-drain-seconds 120` continues observing already-dispatched work for up to 120 seconds after a halt; it never resumes pending work. Reports distinguish the initial halt snapshot, last observed state, observation age, and stop reason. An observation that ends halted or times out exits nonzero even though the report is saved. Optional `--simulator-summary-url http://127.0.0.1:8001/_admin/summary` adds a diagnostic snapshot after monitoring; it is never used by the controller or runner to decide campaign success.
+
+For a controlled process-restart drill, stop the default stack without deleting its volume, then use a separate project:
+
+```sh
+docker compose down
+docker compose -p firmware-recovery -f compose.yaml -f compose.demo.yaml -f compose.recovery.yaml up --build -d
+uv run python scripts/run_campaign.py --concurrency 40 --restart-after 5 --halt-drain-seconds 120 --compose-project firmware-recovery --compose-file compose.yaml --compose-file compose.demo.yaml --compose-file compose.recovery.yaml --output reports/restart.json
+```
+
+`compose.recovery.yaml` selects 40 healthy devices, fixed six-second download and reboot delays, and no duplicate/late callbacks. This separates the planned outage from normal result emission and tests persisted controller state; it supplements the mixed-fleet test rather than replacing it. Use a fresh recovery project for repeatable enrollment. The explicit Compose project/files select the stack being tested; adjust them if you use another project.
+
+This restarts only API and worker, leaving the simulator and database running. The supplied simulator does not retry failed callbacks, so a callback emitted while the API is unavailable can be lost permanently. The controller preserves state and handles late evidence, but it cannot reconstruct an unreported result. An unresolved dispatched operation retains its slot and can halt the campaign; that is a truthful recovery outcome, not a reason to resend Download. The runner saves halted results and never automatically resumes a safety halt.
+
+Simulator state is in memory: restarting it resets firmware versions. PostgreSQL's named volume retains campaigns. `docker compose down` preserves that volume; use `down -v` only when intentionally discarding campaign history.
 
 ## External simulator
 
@@ -56,7 +82,7 @@ SIMULATOR_URL=https://your-simulator.example docker compose up --build -d postgr
 
 Configure the external simulator's `CONTROLLER_URL` to a reachable controller address. Container-local `localhost` is not another container. External machines require an explicitly configured reachable listener/network route; defaults are loopback-only. Public deployment additionally needs operator authentication and device identity verification.
 
-The controller calls only the two specified simulator APIs. It never uses local `/summary`, nor polls fleet versions to determine completion. Versions are opaque strings. ISO-8601 completion times without a timezone are interpreted as UTC. Scheduler deadlines use PostgreSQL receipt time.
+The optional duplicate-response adapter is local test infrastructure; external evaluator integration continues to use the unchanged controller protocol. The controller calls only the two specified simulator APIs. It never calls the supplied `/_admin/summary` endpoint or polls inventory to determine completion. That summary is for evaluator/run-report comparison only. Versions are opaque strings. The supplied simulator sends `startTime` and `completeTime` as Unix epoch seconds, which Pydantic accepts and normalizes. ISO-8601 values are also accepted; timezone-free ISO values are interpreted as UTC. Scheduler deadlines use PostgreSQL receipt time, not device clocks.
 
 | Owner | Endpoint | Purpose |
 |---|---|---|
@@ -64,6 +90,7 @@ The controller calls only the two specified simulator APIs. It never uses local 
 | Controller | `POST /devices/{deviceId}/command-response` | ACCEPTED/REJECTED acknowledgment by key. |
 | Controller | `POST /campaigns` | Snapshot eligible devices and create campaign. |
 | Controller | `GET /campaigns/{id}` | Counts, slots, failure rates, halt reason, sampling epoch, configuration. |
+| Controller | `GET /campaigns/{id}/events` | Read-only, filtered, bounded audit-history pagination. |
 | Controller | `POST /campaigns/{id}/pause` | Stop new admission and command authorization. |
 | Controller | `POST /campaigns/{id}/resume` | Resume or explicitly reset a halted failure-gate sample. |
 | Simulator | `GET /devices?version=...` | Fleet discovery at creation. |
@@ -128,13 +155,13 @@ NOTIFIED, DOWNLOAD_ISSUED, AWAITING_RESULT, and OUTCOME_UNKNOWN hold slots. SUCC
 
 BOOT has no key/event timestamp. Its correlation is an inference using one active attempt; stale events cannot be perfectly distinguished. Concurrency is bounded over tracked operations. Stronger physical-device guarantees require a stronger protocol. Periodic version reports alone do not establish success.
 
-Terminal outcomes stay stable. Duplicate callbacks do not double-count or redispatch. Late contradictions are audited; unknown outcomes remain reconcilable. Historical keyed callbacks cannot affect a newer attempt. Unknown completion keys return no commands; cross-device keys return 409; invalid bodies return 422; database failures return 503 rather than uncommitted commands.
+Terminal outcomes stay stable. Duplicate keyed callbacks do not double-count or redispatch. The first matching TransferComplete after BOOT-inferred success is classified as `late_completion` and audited as `LATE_CORROBORATION`; subsequent repeats are duplicates. Neither changes the already-recorded outcome. Late contradictions are audited; unknown outcomes remain reconcilable. Historical keyed callbacks cannot affect a newer attempt. Unknown completion keys return no commands; cross-device keys return 409; invalid bodies return 422; database failures return 503 rather than uncommitted commands.
 
 ## Reliability and controls
 
 Short transactions lock the campaign before admission, dispatch, state changes, and operator decisions. Concurrent workers use `FOR UPDATE SKIP LOCKED`. Outbound calls occur outside locks. Command identity and deadlines commit before the inform response; a crash after commit can still leave delivery uncertain.
 
-Nudges have bounded exponential retries, jitter, and durable leases. Stale nudge results cannot overwrite callback-driven state. Download is never automatically retransmitted: a unique key does not imply device-side installation deduplication. Missing ACK retains the original result deadline. Duplicate events do not indefinitely extend deadlines.
+Nudges have bounded exponential retries, jitter, and durable leases. Admission reserves only available nudge capacity, so a session deadline does not start for work waiting behind an unbounded dispatch queue. Stale nudge results cannot overwrite callback-driven state. Download is never automatically retransmitted: a unique key does not imply device-side installation deduplication. Missing ACK retains the original result deadline. Duplicate events do not indefinitely extend deadlines.
 
 Pause/halt park unsent reservations. Already authorized responses may arrive afterward; active upgrades continue. Resume from PAUSED retains its sample. Resume from HALTED starts a new sampling epoch and rejects outstanding unknown outcomes. Late evidence does not silently resume dispatch. All-terminal campaigns become COMPLETED even with failures.
 
@@ -160,7 +187,7 @@ Process settings are `DATABASE_URL`, `SIMULATOR_URL`, `CONFIG_FILE`, and `WORKER
 | `minimum_sample` | 20 | Failure sample before cohort cap. |
 | `max_http_concurrency` | 20 | Nudge batch size per worker. |
 
-Simulator settings and profiles are in [simulator/README.md](simulator/README.md). Profiles are deterministic per seed; scheduling and aggressive deadlines can affect actual results.
+The supplied simulator settings and profiles are documented in [the integration guide](docs/simulator-integration.md). Fleet identities/profiles are seeded; timing and duplicate/late decisions use a shared random generator, so callback scheduling can change observed results. `.env.example` exposes the supplied settings using their actual names (`SEED`, `P_NO_TC`, `P_REVERT`, and so on). The optional prototype's settings remain in [simulator/README.md](simulator/README.md).
 
 API metrics include incoming counts/latencies by route template, method, and status; outgoing discovery; callback classifications; active state/slot gauges; durable outcomes by evidence; timeout transitions; and recorded nudge retries. Worker metrics include outgoing nudges and heartbeat. Process counters reset on restart; database progress does not. JSON logs carry transition identity/reason. IDs are excluded from metric labels. Responses include `X-Request-ID`. `/readyz` verifies database/schema; `/healthz` checks liveness.
 
@@ -182,6 +209,6 @@ uv run ruff check .
 uv run ruff format --check .
 ```
 
-Fixtures refuse database names other than `firmware_test` because they recreate tables. Tests cover actual PostgreSQL concurrency, callback ordering, deadlines, retry leases, threshold boundaries, pause/resume, and simulator behaviors. [The run report](docs/run-report.md) contains measured outcomes and restart evidence. [The scaling note](docs/scaling.md) discusses 5/10/15 million devices.
+Fixtures refuse database names other than `firmware_test` because they recreate tables. Tests cover actual PostgreSQL concurrency, callback ordering, deadlines, retry leases, threshold boundaries, pause/resume, and callbacks from the unchanged supplied simulator as well as the prototype fixture. [The run report](docs/run-report.md) contains measured supplied-simulator outcomes and restart evidence. The earlier [prototype run report](docs/archive/local-simulator-run-report.md) and [raw data](docs/archive/local-simulator-run-data.json) are archived separately and are not supplied-simulator results. [The scaling note](docs/scaling.md) discusses 5/10/15 million devices.
 
 Scope trade-offs: one active campaign, no automatic rollback or unsafe Download retry, no full auth platform or dashboards, and a memory-only simulator fleet separate from durable controller state. These choices focus on correctness and recovery within the assignment budget.

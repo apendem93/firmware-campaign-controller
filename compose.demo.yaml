@@ -1,4 +1,4 @@
-# Accelerated timing for demonstrations only; keep the regular profile for external simulators.
+# Accelerated settings for the unchanged supplied simulator; retain normal settings for realistic timings.
 services:
   migrate:
     volumes:
@@ -11,4 +11,9 @@ services:
       - ./config.demo.yaml:/app/config.yaml:ro
   simulator:
     environment:
-      SIMULATOR_TIME_SCALE: "0.02"
+      PERIODIC_INFORM_SEC: "30"
+      DOWNLOAD_MIN_SEC: "0"
+      DOWNLOAD_MAX_SEC: "1"
+      REBOOT_MIN_SEC: "1"
+      REBOOT_MAX_SEC: "3"
+      LATE_EXTRA_SEC: "60"

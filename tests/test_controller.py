@@ -106,6 +106,79 @@ async def test_empty_fleet_completes(client, database):
         assert campaign.total == 0
 
 
+async def test_first_completion_after_boot_is_recorded_as_corroboration(client, database):
+    campaign_id = await create(client, database)
+    key = await dispatch(client, database)
+    await client.post("/devices/device-1/inform", json=inform(event="BOOT", version="2.0.0"))
+    payload = inform(event="TRANSFER_COMPLETE", version="2.0.0", completion=completion(key))
+    for _ in range(2):
+        assert (await client.post("/devices/device-1/inform", json=payload)).status_code == 200
+    assert await state(database) == "SUCCEEDED"
+    async with database() as session:
+        rows = (
+            await session.scalars(
+                select(DeviceEvent).where(
+                    DeviceEvent.campaign_id == uuid.UUID(campaign_id),
+                    DeviceEvent.kind == "completion_observation",
+                )
+            )
+        ).all()
+        assert len(rows) == 1 and rows[0].reason == "LATE_CORROBORATION"
+    diagnostics = (
+        await client.get(f"/campaigns/{campaign_id}/devices", params={"state": "SUCCEEDED"})
+    ).json()["items"][0]
+    assert diagnostics["faultCode"] == 0
+    assert diagnostics["evidence"] == "boot_inferred"
+
+
+async def test_event_history_is_paginated_and_filterable(client, database):
+    campaign_id = await create(client, database)
+    key = await dispatch(client, database)
+    collected = []
+    after = 0
+    while True:
+        response = await client.get(
+            f"/campaigns/{campaign_id}/events",
+            params={"deviceId": "device-1", "limit": 1, "after": after},
+        )
+        assert response.status_code == 200
+        page = response.json()
+        collected.extend(page["items"])
+        if page["nextCursor"] is None:
+            break
+        after = page["nextCursor"]
+    assert len(collected) >= 2
+    assert len({event["id"] for event in collected}) == len(collected)
+    assert all(event["deviceId"] == "device-1" for event in collected)
+    assert any(
+        event["commandKey"] == key and event["reason"] == "COMMAND_AUTHORIZED"
+        for event in collected
+    )
+    filtered = (
+        await client.get(f"/campaigns/{campaign_id}/events", params={"commandKey": key})
+    ).json()["items"]
+    assert filtered and all(event["commandKey"] == key for event in filtered)
+    assert (await client.get(f"/campaigns/{uuid.uuid4()}/events")).status_code == 404
+    assert (
+        await client.get(f"/campaigns/{campaign_id}/events", params={"limit": 501})
+    ).status_code == 422
+
+
+async def test_explicit_fault_wins_but_conflicting_target_firmware_is_audited(client, database):
+    campaign_id = await create(client, database)
+    key = await dispatch(client, database)
+    response = await client.post(
+        "/devices/device-1/inform",
+        json=inform(event="TRANSFER_COMPLETE", version="2.0.0", completion=completion(key, 9010)),
+    )
+    assert response.status_code == 200
+    assert await state(database) == "FAILED"
+    events = (
+        await client.get(f"/campaigns/{campaign_id}/events", params={"commandKey": key})
+    ).json()["items"]
+    assert any(event["reason"] == "FAULT_WITH_TARGET_VERSION" for event in events)
+
+
 async def test_late_old_boot_resolves_unknown_outcome(client, database):
     await create(client, database)
     await dispatch(client, database)

@@ -1,11 +1,11 @@
-# Accelerated local simulator profile; do not use with real device timings.
-scheduler_interval: 0.1
+# Accelerated supplied-simulator profile; do not use with normal reboot/late timings.
+scheduler_interval: 0.2
 http_timeout: 5.0
 nudge_attempts: 3
-nudge_backoff: 0.5
-inform_timeout: 5.0
-ack_timeout: 5.0
-result_timeout: 60.0
+nudge_backoff: 3.0
+inform_timeout: 20.0
+ack_timeout: 10.0
+result_timeout: 120.0
 verification_grace: 3.0
 lease_seconds: 15.0
 minimum_sample: 20

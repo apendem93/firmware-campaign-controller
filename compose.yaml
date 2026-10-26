@@ -62,19 +62,32 @@ services:
 
   simulator:
     <<: *app
-    command: ["uvicorn", "simulator.app:app", "--host", "0.0.0.0", "--port", "8001"]
+    command: ["uvicorn", "scripts.fw_simulator:app", "--host", "0.0.0.0", "--port", "8001"]
     environment:
       CONTROLLER_URL: http://api:8000
       DEVICE_COUNT: ${DEVICE_COUNT:-1000}
-      SIMULATOR_SEED: ${SIMULATOR_SEED:-42}
-      SIMULATOR_TIME_SCALE: ${SIMULATOR_TIME_SCALE:-1}
+      SEED: ${SEED:-42}
+      OLD_VERSION: ${OLD_VERSION:-1.0.0}
+      PERIODIC_INFORM_SEC: ${PERIODIC_INFORM_SEC:-300}
+      DOWNLOAD_MIN_SEC: ${DOWNLOAD_MIN_SEC:-2}
+      DOWNLOAD_MAX_SEC: ${DOWNLOAD_MAX_SEC:-20}
+      REBOOT_MIN_SEC: ${REBOOT_MIN_SEC:-5}
+      REBOOT_MAX_SEC: ${REBOOT_MAX_SEC:-240}
+      P_DUPLICATE: ${P_DUPLICATE:-0.05}
+      P_LATE: ${P_LATE:-0.05}
+      LATE_EXTRA_SEC: ${LATE_EXTRA_SEC:-600}
+      P_OFFLINE: ${P_OFFLINE:-0.05}
+      P_REJECT: ${P_REJECT:-0.03}
+      P_FAULT: ${P_FAULT:-0.04}
+      P_NO_TC: ${P_NO_TC:-0.03}
+      P_REVERT: ${P_REVERT:-0.02}
     ports:
       - "127.0.0.1:${SIMULATOR_PORT:-8001}:8001"
     depends_on:
       api:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/healthz', timeout=3)"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/openapi.json', timeout=3)"]
       interval: 5s
       timeout: 4s
       retries: 20

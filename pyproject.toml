@@ -32,7 +32,9 @@ testpaths = ["tests"]
 pythonpath = ["."]
 markers = ["integration: requires dedicated PostgreSQL firmware_test database"]
 
+# Preserve the supplied reference simulator byte-for-byte. Our controller/tests remain linted.
 [tool.ruff]
+extend-exclude = ["scripts/fw_simulator.py"]
 target-version = "py312"
 line-length = 100
 

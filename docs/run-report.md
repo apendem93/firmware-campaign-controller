@@ -1,57 +1,80 @@
-# Simulator campaign run report
+# Supplied simulator validation report
 
-Validated on October 24, 2026 using Docker Compose, PostgreSQL 16, Python 3.12, and the accelerated configuration in `config.demo.yaml`. Raw progress samples and audit checks are in [run-data.json](run-data.json).
+Validated on October 26, 2026 with PostgreSQL 16, Python 3.12, Docker Compose, and the supplied simulator. [Raw progress samples, audit checks, and operator-control results](run-data.json) are retained. The [earlier prototype report](archive/local-simulator-run-report.md) belongs to the original local simulator and is not evidence from this supplied implementation.
+
+## Source integrity and test conditions
+
+`scripts/fw_simulator.py` is byte-for-byte identical to the uploaded `device_simulator.txt`:
+
+```text
+SHA-256 b2f0da91e8b9bb7375f46c5e2497d218df588bccdc9b80b196dc3aae95a1c4d8
+```
+
+Both mixed-fleet runs used 1,000 devices, seed 42, target 2.0.0, maxConcurrent 100, and failureThresholdPercent 100 to observe the full fleet. Both retained the supplied profile probabilities, 5% duplicate callbacks, and 5% late completions. The supported demo environment used download 0–1 seconds, reboot 1–3 seconds, periodic informs every 30 seconds, and late delay 60 seconds. Controller inform/ACK/result deadlines were 20/10/120 seconds. These are accelerated functional runs, not measurements using the simulator's normal multi-minute timing defaults.
+
+The optional adapter changes only the handling of commands returned to duplicated inform requests. It does not change device profiles, probabilities, firmware changes, busy handling, callback retry behavior, or Download deduplication.
+
+## Observed results
+
+| Run | Status | Succeeded | Failed | Timed out | Unknown | Observation duration |
+|---|---|---:|---:|---:|---:|---:|
+| Unmodified supplied simulator | HALTED: OUTCOME_UNKNOWN | 844 | 104 | 48 | 4 | 276.574 s, including bounded drain observation |
+| Supplied simulator + opt-in duplicate-response adapter | COMPLETED | 848 | 104 | 48 | 0 | 203.555 s |
+| Controlled API/worker restart, 40 healthy devices | COMPLETED | 40 | 0 | 0 | 0 | 17.063 s after monitoring started |
+
+The raw run is **not** reported as a successful completed campaign. All devices had been admitted before the safety halt; four unresolved attempts still held slots when the bounded monitor stopped. The controller did not use interviewer ground truth to clear those slots or retry potentially unsafe Downloads.
+
+Seed 42 produced 815 healthy, 33 no-TC, 36 rejecting, 45 transfer-fault, 23 reverting, and 48 offline devices. The corrected run matches that ground truth exactly: 815 + 33 successes, 36 + 45 + 23 failures, and 48 pre-dispatch timeouts. Failure rate was 15.2%. The interviewer summary independently reported 848 devices on target firmware and zero busy devices. It was queried by the reporting harness after monitoring; the controller never calls it.
+
+## Reproduced defect in the supplied simulator
+
+`duplicate_post()` posts a duplicate inform but ignores the controller's response body. A valid sequence is:
+
+1. A device sends PERIODIC while its campaign membership is still PENDING; the response has no command.
+2. The scheduler admits that device and reserves a slot.
+3. The delayed duplicate PERIODIC arrives. The controller durably authorizes its first Download and returns it.
+4. `duplicate_post()` discards that response. No Download executes and no command acknowledgment arrives.
+5. The result deadline expires. The controller retains the slot and records OUTCOME_UNKNOWN.
+
+The raw run had four unresolved attempts consistent with this defect, each with a PERIODIC dispatch event and a missing acknowledgment: `GW-1723199DBF2C`, `GW-257F7595CDFB`, `GW-36A2C52B0047`, and `GW-C03987108976`. The recorded events do not establish which simulator handler received each response. A focused test reproduces the exact before/after-admission sequence using the supplied functions. Its paired adapter test verifies the returned command is executed once and the attempt completes.
+
+There is no event/session ID distinguishing the ignored duplicate from a new legitimate session. Reissuing Download in the controller would be unsafe because the supplied simulator does not deduplicate command keys after an operation finishes. The optional adapter repairs the simulator-side response handling by delegating returned Downloads to its original `handle_download()` function. The raw simulator remains the default for evaluator parity.
+
+## Audit and functional verification
+
+- Reconstructing every persisted slot transition showed a maximum of **100** in both 1,000-device runs and **40** in the recovery drill. No negative slot count appeared.
+- Duplicate Download authorizations: **0**. Command identities differing from their original authorization: **0**. Pre-dispatch timeouts without a nudge attempt: **0**.
+- Both mixed-fleet runs made exactly **one** inventory request from the controller. No version polling or admin-summary dependency drove outcomes.
+- Corrected-run failures were 36 explicit rejections, 45 keyed transfer faults, and 23 old-version BOOT inferences. Success evidence was 778 matching completions and 70 BOOT inferences; 37 of those BOOT outcomes later received corroborating completion events. The remaining 33 match the no-TC profile.
+- API and worker metrics, scheduler heartbeat, readiness, and the paginated event-history endpoint were exercised successfully. Device IDs were absent from metric labels.
+- **85 tests passed**, locally in 17.22 seconds and in the isolated Docker test workflow in 20.36 seconds. This includes the actual supplied implementation, the optional adapter, real PostgreSQL concurrency, migrations, deadlines, callback ordering, diagnostic history, and failure-report handling. Ruff lint/format and Git whitespace checks passed.
+
+## Operator controls and restart recovery
+
+The controlled drill used `compose.recovery.yaml`: 40 healthy devices, six-second download and six-second reboot delays, with duplicate and late injection disabled for this separate scenario. The full mixed-fleet runs above still exercised those behaviors.
+
+Pause returned PAUSED; no new command authorizations appeared during the observation interval. Ordinary resume returned RUNNING without resetting the failure-gate epoch. The runner requested an actual API and worker restart at 6.102 seconds and completed it at 8.966 seconds. PostgreSQL and the supplied simulator remained running. All 40 devices completed under their original command keys.
+
+A second live control test configured 40 rejecting devices and a 0% failure threshold with concurrency five. The campaign halted after the minimum sample of 20 failed outcomes, leaving 20 pending and no active slots. No additional Downloads were authorized during the halted observation. Explicit resume started epoch one; the remaining 20 failures completed the campaign. These rejections are expected test outcomes.
+
+The restart drill verifies durable controller recovery while upgrades are in progress. It does not claim that callbacks emitted during an outage are retried: the supplied simulator drops failed callbacks. Dedicated tests verify that missing ACK alone can still resolve through TransferComplete and that genuinely missing outcome evidence retains its slot safely.
 
 ## Reproduction
 
+Run each mixed-fleet case with a fresh simulator and no active campaign. The commands below use separate projects sequentially, preserving their database volumes. Stop any other stack occupying ports 8000/8001/9001 first. If these project names have already been used, select new names for a fresh cohort rather than deleting history unintentionally.
+
 ```sh
-docker compose -f compose.yaml -f compose.demo.yaml up --build -d
+# Exact supplied behavior
+docker compose -p assignment-raw -f compose.yaml -f compose.demo.yaml up --build -d
 uv sync --frozen
-uv run python scripts/run_campaign.py --restart-after 12 --output reports/campaign-final.json
+uv run python scripts/run_campaign.py --halt-drain-seconds 150 --simulator-summary-url http://127.0.0.1:8001/_admin/summary --output reports/raw-supplied.json
+
+# Stop the raw stack without deleting its database, then use an independent fleet.
+docker compose -p assignment-raw -f compose.yaml -f compose.demo.yaml down
+docker compose -p assignment-corrected -f compose.yaml -f compose.demo.yaml -f compose.simulator-fix.yaml up --build -d
+uv run python scripts/run_campaign.py --halt-drain-seconds 150 --simulator-summary-url http://127.0.0.1:8001/_admin/summary --output reports/corrected-supplied.json
 ```
 
-Use a fresh simulator fleet. Preserve PostgreSQL during controller restarts. The local simulator uses seed 42 and 1,000 devices starting on 1.0.0. This campaign targets 2.0.0, with maxConcurrent=100 and failureThresholdPercent=100 to observe the full fleet. Failure-gate behavior is validated separately by integration tests.
+The raw runner intentionally exits nonzero when the campaign remains HALTED. A fixed seed reproduces profiles, but shared asynchronous timing randomness means the number of discarded duplicate responses is not guaranteed to be four on every run. The controlled recovery commands are in the [README](../README.md); the full function mapping and limitations are in the [integration guide](simulator-integration.md).
 
-## Result
-
-Campaign `a750fc49-4de3-4ed5-928e-4dd3c10e8ae9` reached **COMPLETED** after **133.72 seconds** measured by the runner. Failure rate was **18.70%**. Final held slots: **0**. Halt reason: **None**.
-
-| Device state | Count |
-|---|---:|
-| PENDING | 0 |
-| NOTIFIED | 0 |
-| DOWNLOAD_ISSUED | 0 |
-| AWAITING_RESULT | 0 |
-| OUTCOME_UNKNOWN | 0 |
-| SUCCEEDED | 813 |
-| FAILED | 147 |
-| TIMED_OUT | 40 |
-
-| Outcome | Evidence | Count |
-|---|---|---:|
-| FAILED | ack | 59 |
-| FAILED | boot_inferred | 50 |
-| FAILED | transfer_complete | 38 |
-| SUCCEEDED | boot_inferred | 70 |
-| SUCCEEDED | transfer_complete | 743 |
-| TIMED_OUT | deadline | 40 |
-
-## Restart and correctness evidence
-
-- The runner restarted both API and worker at approximately 12.36 seconds; the simulator and PostgreSQL stayed running. This was an actual Compose process restart, not just a database reconnect.
-- Reconstructing every slot transition from the durable audit log gives a maximum of 100 and minimum of 0. The configured maximum was never exceeded in that history.
-- Duplicate Download authorizations per device: 0. Command identities inconsistent with the original authorization: 0.
-- Timeouts with no nudge attempt: 0. Maximum nudge attempts for any device: 3.
-- Unknown-outcome transitions in this final run: 0. Dedicated tests verify slot retention, halting, and late reconciliation for this state.
-- Both API and worker metrics returned successfully and exposed expected request/outcome/heartbeat series without device-ID labels. API readiness passed.
-- **53 tests passed** against PostgreSQL locally and in the isolated Docker test workflow. This includes simultaneous informs/workers, callback ordering, retries, deadlines, failure-gate boundaries, migration round trips, and simulator behaviors. Ruff lint/format and Git whitespace checks passed.
-
-## Findings and limitations
-
-Earlier exploratory runs exposed two issues that were corrected before this run: accelerated periodic traffic could accumulate excessive background callback tasks, and admission could reserve devices without available nudge capacity. The simulator now bounds outstanding periodic work and applies a 30-second minimum periodic interval in accelerated mode. Callback retry delays use real time. The scheduler reserves only the capacity it can claim in the current nudge batch; a regression test protects this invariant.
-
-Old-version BOOT outcomes intentionally wait for the result deadline, so the last part of the campaign can show little change while valid timers expire. BOOT-based outcomes remain explicit inferences because the assignment protocol provides no command key/event timestamp on BOOT. Firmware images are simulated, not downloaded or installed.
-
-The simulator's final seeded scenario distribution was `{"boot_only": 53, "duplicate": 37, "fault": 38, "late": 17, "normal": 706, "offline": 40, "old_boot": 50, "reject": 59}`. It observed 901 started downloads and zero active downloads at collection time. This diagnostic endpoint was used only to validate this report; the controller never calls it.
-
-This is a 1,000-device development validation, not a 10,000-device capacity benchmark or a test against AT&T's unpublished simulator. Callback payloads and paths follow the documented external contract. No claim of public deployment, authentication hardening, or real hardware validation is made.
+No 10,000-device load benchmark, normal-timing fleet run, public deployment, or real firmware installation is claimed. The assignment's remaining production evolution concerns are documented in [the scaling note](scaling.md).

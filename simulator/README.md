@@ -1,6 +1,8 @@
-# Local gateway simulator
+# Optional prototype simulator
 
-Run `uvicorn simulator.app:app --host 0.0.0.0 --port 8001`, or use the simulator service in Docker Compose.
+This independent fixture predates receipt of the assignment simulator. Docker Compose now runs the unchanged supplied simulator at `scripts/fw_simulator.py`; see [the integration guide](../docs/simulator-integration.md). This module remains for regression tests and comparative experiments.
+
+To run this optional fixture manually, stop the Compose simulator and run `CONTROLLER_URL=http://127.0.0.1:8000 uv run uvicorn simulator.app:app --host 0.0.0.0 --port 8001`. A controller inside Docker must use an address that reaches this host process, such as `http://host.docker.internal:8001` on Docker Desktop. This fixture's retry and deduplication behaviors are stronger than the supplied simulator's and must not be assumed by the controller.
 
 | Variable | Default | Meaning |
 | --- | --- | --- |

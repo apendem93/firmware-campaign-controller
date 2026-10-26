@@ -1,0 +1,4 @@
+# Optional simulator-only correction. The supplied source and controller stay unchanged.
+services:
+  simulator:
+    command: ["uvicorn", "simulator.supplied_adapter:app", "--host", "0.0.0.0", "--port", "8001"]

@@ -234,12 +234,25 @@ async def process_inform(session, campaign, attempt, body, now):
         return []
     if attempt.state in TERMINAL:
         if tc:
-            contradictory = (attempt.state == "SUCCEEDED" and tc.faultCode != 0) or (
-                attempt.state != "SUCCEEDED" and tc.faultCode == 0
+            first_completion = attempt.completion_fault is None
+            reported_success = tc.faultCode == 0 and body.firmwareVersion == campaign.target_version
+            contradictory = (attempt.state == "SUCCEEDED") != reported_success or (
+                not first_completion and attempt.completion_fault != tc.faultCode
             )
-            CALLBACKS.labels("contradiction" if contradictory else "duplicate_completion").inc()
+            if first_completion:
+                attempt.completion_fault = tc.faultCode
+            classification = "late_completion" if first_completion else "duplicate_completion"
+            CALLBACKS.labels("contradiction" if contradictory else classification).inc()
             if contradictory:
                 audit(session, campaign, attempt, "contradiction", reason="LATE_TERMINAL_EVIDENCE")
+            elif first_completion:
+                audit(
+                    session,
+                    campaign,
+                    attempt,
+                    "completion_observation",
+                    reason="LATE_CORROBORATION",
+                )
         return []
     if tc:
         if attempt.completion_fault is not None:
@@ -254,6 +267,11 @@ async def process_inform(session, campaign, attempt, body, now):
         else:
             attempt.completion_fault = tc.faultCode
         if tc.faultCode != 0:
+            if body.firmwareVersion == campaign.target_version:
+                CALLBACKS.labels("contradiction").inc()
+                audit(
+                    session, campaign, attempt, "contradiction", reason="FAULT_WITH_TARGET_VERSION"
+                )
             transition(
                 session,
                 campaign,

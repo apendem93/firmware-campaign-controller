@@ -1,0 +1,18 @@
+# Controlled restart drill: callbacks are separated from the planned API outage.
+# This is an additional recovery test, not a replacement for the mixed-fleet demo.
+services:
+  simulator:
+    environment:
+      DEVICE_COUNT: "40"
+      PERIODIC_INFORM_SEC: "300"
+      DOWNLOAD_MIN_SEC: "6"
+      DOWNLOAD_MAX_SEC: "6"
+      REBOOT_MIN_SEC: "6"
+      REBOOT_MAX_SEC: "6"
+      P_DUPLICATE: "0"
+      P_LATE: "0"
+      P_OFFLINE: "0"
+      P_REJECT: "0"
+      P_FAULT: "0"
+      P_NO_TC: "0"
+      P_REVERT: "0"

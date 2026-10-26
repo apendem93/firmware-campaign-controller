@@ -1,0 +1,2 @@
+# Preserve the supplied simulator's original bytes even with core.autocrlf enabled.
+scripts/fw_simulator.py -text

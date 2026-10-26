@@ -231,10 +231,53 @@ async def campaign_devices(
                     "evidence": row.evidence,
                     "nudgeAttempts": row.nudge_attempts,
                     "ackStatus": row.ack_status,
+                    "faultCode": row.completion_fault,
+                    "lastBootVersion": row.boot_version,
+                    "dispatchedAt": row.dispatched_at,
+                    "resultDeadline": row.result_deadline,
+                    "finishedAt": row.finished_at,
                 }
                 for row in rows[:limit]
             ],
             "nextCursor": rows[limit - 1].device_id if len(rows) > limit else None,
+        }
+
+
+@app.get("/campaigns/{campaign_id}/events")
+async def campaign_events(
+    campaign_id: uuid.UUID,
+    deviceId: str | None = Query(None, max_length=200),
+    commandKey: str | None = Query(None, max_length=200),
+    after: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=500),
+):
+    async with sessions() as session:
+        if await session.get(Campaign, campaign_id) is None:
+            raise HTTPException(404, "Unknown campaign")
+        query = select(DeviceEvent).where(
+            DeviceEvent.campaign_id == campaign_id, DeviceEvent.id > after
+        )
+        if deviceId is not None:
+            query = query.where(DeviceEvent.device_id == deviceId)
+        if commandKey is not None:
+            query = query.where(DeviceEvent.command_key == commandKey)
+        rows = (await session.scalars(query.order_by(DeviceEvent.id).limit(limit + 1))).all()
+        return {
+            "items": [
+                {
+                    "id": row.id,
+                    "deviceId": row.device_id,
+                    "commandKey": row.command_key,
+                    "kind": row.kind,
+                    "fromState": row.previous_state,
+                    "toState": row.new_state,
+                    "reason": row.reason,
+                    "payload": row.payload,
+                    "receivedAt": row.received_at,
+                }
+                for row in rows[:limit]
+            ],
+            "nextCursor": rows[limit - 1].id if len(rows) > limit else None,
         }
 
 
