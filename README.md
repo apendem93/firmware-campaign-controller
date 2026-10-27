@@ -29,6 +29,35 @@ docker compose -f compose.yaml -f compose.demo.yaml -f compose.simulator-fix.yam
 
 The adapter leaves the supplied file byte-for-byte unchanged. It does not add callback retries, command-key deduplication, or change probabilities, timing, or firmware behavior. The raw two-file command remains available for evaluator parity. See [the precise correction and its limits](docs/simulator-integration.md#optional-duplicate-response-correction). Use a fresh project/volume when switching scenarios: restarting the simulator resets its fleet, while PostgreSQL retains campaign history.
 
+### Windows PowerShell: port already allocated
+
+If startup reports `Bind for 127.0.0.1:8000 failed: port is already allocated` after switching from the original `firmware-campaign` project to `supplied-demo`, the original stack is still using the host ports. Project names isolate containers, networks, and database volumes; both projects still request ports 8000, 8001, and 9001.
+
+From the repository directory, stop the original stack and resume the new one:
+
+```powershell
+docker compose -p firmware-campaign -f compose.yaml -f compose.demo.yaml stop
+docker compose -p supplied-demo -f compose.yaml -f compose.demo.yaml -f compose.simulator-fix.yaml up -d --wait
+docker compose -p supplied-demo -f compose.yaml -f compose.demo.yaml -f compose.simulator-fix.yaml ps
+Invoke-RestMethod http://localhost:8000/readyz
+```
+
+These commands preserve both database volumes and reuse the successfully built image. Expect `status: ready`, then open <http://localhost:8000/docs>. Keep `-p supplied-demo` on subsequent Compose commands for this stack; plain `docker compose ps` selects the default `firmware-campaign` project. No volume deletion is needed. For a later source update, use `up --build -d --wait` with the same project and files.
+
+To keep the original stack running instead, use different host ports for the new stack. Set all three variables in PowerShell before the `supplied-demo` startup command:
+
+```powershell
+$env:CONTROLLER_PORT = "8010"
+$env:SIMULATOR_PORT = "8011"
+$env:WORKER_METRICS_PORT = "9011"
+docker compose -p supplied-demo -f compose.yaml -f compose.demo.yaml -f compose.simulator-fix.yaml up -d --wait
+Invoke-RestMethod http://localhost:8010/readyz
+```
+
+The new API is then at <http://localhost:8010/docs>. These variables apply to subsequent Compose commands in that PowerShell session; keep using the same port settings for this stack. Container-to-container addresses stay unchanged.
+
+### Create and inspect a campaign
+
 The demo changes only supported environment settings: download 0–1 seconds, reboot 1–3 seconds, periodic informs every 30 seconds, and late completion delay 60 seconds. Duplicate and late-callback probabilities remain enabled. Its controller result deadline is 120 seconds; reverted devices deliberately wait that deadline before failure classification. The standard profile preserves the supplied defaults (download up to 20 seconds, reboot up to 240 seconds, late delay up to 600 seconds) and uses a 900-second result deadline. Use the standard profile for realistic evaluator timings.
 
 ```sh
