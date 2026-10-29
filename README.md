@@ -15,6 +15,10 @@ docker compose ps
 
 Compose migrates the database before starting the API, worker, and simulator. Controller port 8000 provides `/docs`, `/healthz`, `/readyz`, and `/metrics`. Simulator port is 8001; worker metrics port is 9001.
 
+Runtime containers use Docker's rotating `local` log driver with a 10 MB file limit and three retained files per container. This bounds local log storage during long simulator runs; `docker compose logs` continues to work. Existing containers need recreation to adopt a changed logging configuration. Campaign and audit records remain in PostgreSQL and are independent of container log retention.
+
+Compose excludes `localhost`, `127.0.0.1`, `api`, `simulator`, and `postgres` from HTTP proxies and preserves additional host `NO_PROXY` / `no_proxy` exclusions. Internal service calls therefore stay on the Compose network even when Docker injects proxy settings. External simulator destinations still follow the configured proxy policy unless explicitly excluded.
+
 For an accelerated run with the raw supplied behavior, start with this configuration instead:
 
 ```sh
@@ -140,7 +144,7 @@ flowchart LR
     W -->|connection-request| S
 ```
 
-Four long-lived services plus a migration job share one image. PostgreSQL is the durable queue; no Redis/broker is needed. A partial unique index enforces one active campaign. Enrollment snapshots up to 10,000 devices, deduplicates consistent inventory, and completes empty cohorts immediately.
+The API, worker, and simulator are long-lived processes using the application image; the one-shot migration job uses that image too. PostgreSQL is a fourth long-lived service with its own image. PostgreSQL is the durable queue; no Redis/broker is needed. A partial unique index enforces one active campaign. Enrollment snapshots up to 10,000 devices, deduplicates consistent inventory, and completes empty cohorts immediately.
 
 | Table | Data |
 |---|---|
@@ -184,7 +188,7 @@ NOTIFIED, DOWNLOAD_ISSUED, AWAITING_RESULT, and OUTCOME_UNKNOWN hold slots. SUCC
 
 BOOT has no key/event timestamp. Its correlation is an inference using one active attempt; stale events cannot be perfectly distinguished. Concurrency is bounded over tracked operations. Stronger physical-device guarantees require a stronger protocol. Periodic version reports alone do not establish success.
 
-Terminal outcomes stay stable. Duplicate keyed callbacks do not double-count or redispatch. The first matching TransferComplete after BOOT-inferred success is classified as `late_completion` and audited as `LATE_CORROBORATION`; subsequent repeats are duplicates. Neither changes the already-recorded outcome. Late contradictions are audited; unknown outcomes remain reconcilable. Historical keyed callbacks cannot affect a newer attempt. Unknown completion keys return no commands; cross-device keys return 409; invalid bodies return 422; database failures return 503 rather than uncommitted commands.
+Terminal outcomes stay stable. Duplicate keyed callbacks do not double-count or redispatch. The first consistent matching TransferComplete after BOOT-inferred success is classified as `late_completion` and audited as `LATE_CORROBORATION`; subsequent consistent repeats are duplicates. A contradictory completion is classified as `contradiction` and audited as `LATE_TERMINAL_EVIDENCE`. Neither changes the already-recorded outcome; unknown outcomes remain reconcilable. Historical keyed callbacks cannot affect a newer attempt. Unknown completion keys return no commands; cross-device keys return 409; invalid bodies return 422; database failures return 503 rather than uncommitted commands.
 
 ## Reliability and controls
 

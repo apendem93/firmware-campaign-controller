@@ -1,19 +1,31 @@
 name: firmware-campaign
 
+x-logging: &bounded-logging
+  driver: local
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+x-no-proxy: &internal-no-proxy "localhost,127.0.0.1,api,simulator,postgres,${NO_PROXY:-},${no_proxy:-}"
+
 x-app: &app
   image: firmware-campaign:local
   build: .
   init: true
+  logging: *bounded-logging
   environment: &controller-env
     DATABASE_URL: postgresql+asyncpg://firmware:${POSTGRES_PASSWORD:-firmware-local-only}@postgres:5432/firmware
     SIMULATOR_URL: ${SIMULATOR_URL:-http://simulator:8001}
     CONFIG_FILE: /app/config.yaml
+    NO_PROXY: *internal-no-proxy
+    no_proxy: *internal-no-proxy
   volumes:
     - ./config.yaml:/app/config.yaml:ro
 
 services:
   postgres:
     image: postgres:16-alpine
+    logging: *bounded-logging
     environment:
       POSTGRES_DB: firmware
       POSTGRES_USER: firmware
@@ -65,6 +77,8 @@ services:
     command: ["uvicorn", "scripts.fw_simulator:app", "--host", "0.0.0.0", "--port", "8001"]
     environment:
       CONTROLLER_URL: http://api:8000
+      NO_PROXY: *internal-no-proxy
+      no_proxy: *internal-no-proxy
       DEVICE_COUNT: ${DEVICE_COUNT:-1000}
       SEED: ${SEED:-42}
       OLD_VERSION: ${OLD_VERSION:-1.0.0}

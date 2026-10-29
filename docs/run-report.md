@@ -1,6 +1,6 @@
 # Supplied simulator validation report
 
-Validated on October 26, 2026 with PostgreSQL 16, Python 3.12, Docker Compose, and the supplied simulator. [Raw progress samples, audit checks, and operator-control results](run-data.json) are retained. The [earlier prototype report](archive/local-simulator-run-report.md) belongs to the original local simulator and is not evidence from this supplied implementation.
+Initially validated on October 26, 2026 with PostgreSQL 16, Python 3.12, Docker Compose, and the supplied simulator; the submission recheck below was performed on October 29. [Raw progress samples, audit checks, operator-control results, and the submission recheck](run-data.json) are retained. The [earlier prototype report](archive/local-simulator-run-report.md) belongs to the original local simulator and is not evidence from this supplied implementation.
 
 ## Source integrity and test conditions
 
@@ -58,6 +58,18 @@ Pause returned PAUSED; no new command authorizations appeared during the observa
 A second live control test configured 40 rejecting devices and a 0% failure threshold with concurrency five. The campaign halted after the minimum sample of 20 failed outcomes, leaving 20 pending and no active slots. No additional Downloads were authorized during the halted observation. Explicit resume started epoch one; the remaining 20 failures completed the campaign. These rejections are expected test outcomes.
 
 The restart drill verifies durable controller recovery while upgrades are in progress. It does not claim that callbacks emitted during an outage are retried: the supplied simulator drops failed callbacks. Dedicated tests verify that missing ACK alone can still resolve through TransferComplete and that genuinely missing outcome evidence retains its slot safely.
+
+## Submission recheck — October 29, 2026
+
+The isolated Docker/PostgreSQL suite passed again: **85 tests in 17.86 seconds**. The cached runtime/test images' checked application, simulator, test, and dependency files matched the repository. No controller or simulator behavior changed during this recheck.
+
+A fresh 1,000-device accelerated campaign with the optional adapter completed in approximately **186 seconds**: **848 SUCCEEDED, 104 FAILED, 48 TIMED_OUT, zero OUTCOME_UNKNOWN**, with all slots released. The fleet seed, failure probabilities, concurrency 100, and threshold 100 matched the earlier mixed-fleet conditions. Live pause/resume was exercised during this run; the authorization count remained 787 during the paused observation and ordinary resume retained its gate epoch.
+
+Persisted transition reconstruction confirmed maximum slots 100, minimum zero, no duplicate Download authorizations, no changed command identities, and no pre-dispatch timeouts without a nudge attempt. The controller made one inventory request. Metrics, audit pagination, Compose profiles, Ruff, and Alembic schema consistency checks passed. Detailed final observations and checks appear under `submissionRecheck` in `run-data.json`.
+
+The recheck exposed two deployment issues: accumulated logs from an inactive historical cloud demo exhausted the root disk, and Docker-injected HTTP proxies routed internal service discovery through an external proxy. The initial runs affected by those issues are not counted as passing validation. Historical demo containers were removed while preserving their database volume. Compose now configures rotating `local` logs (10 MB, three files per container) and upper/lower `NO_PROXY` exclusions for its service names, preserving host exclusions. Fresh containers were inspected for logging settings, and internal discovery/callback HTTP succeeded with the external proxy still configured. Validation was then rerun successfully.
+
+This adds current local-deployment evidence; it does not extend the earlier raw-simulator, restart, normal-timing, hardware, or scale claims.
 
 ## Reproduction
 

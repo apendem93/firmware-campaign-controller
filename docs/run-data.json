@@ -4103,5 +4103,120 @@
         "completedAt": "2026-10-26T23:23:50.634601+00:00"
       }
     }
+  },
+  "submissionRecheck": {
+    "date": "2026-10-29",
+    "applicationBaselineCommit": "385d2467fd20cb654d97975f81efe6e0fca24aaf",
+    "runtimeChanges": [
+      "Rotating local container logs: 10m, three files per container",
+      "Internal Compose service proxy exclusions with host exclusion lists preserved"
+    ],
+    "tests": {
+      "passed": 85,
+      "seconds": 17.86,
+      "environment": "isolated Docker/PostgreSQL",
+      "cachedImageSourceAndLockMatchedRepository": true
+    },
+    "campaign": {
+      "startedAt": "2026-10-29T23:52:25.757987+00:00",
+      "restart": null,
+      "haltSnapshot": null,
+      "final": {
+        "id": "8c6b6413-7966-4060-88ee-3dd9fb8fa63a",
+        "status": "COMPLETED",
+        "haltReason": null,
+        "targetVersion": "2.0.0",
+        "totalDevices": 1000,
+        "counts": {
+          "PENDING": 0,
+          "NOTIFIED": 0,
+          "DOWNLOAD_ISSUED": 0,
+          "AWAITING_RESULT": 0,
+          "OUTCOME_UNKNOWN": 0,
+          "SUCCEEDED": 848,
+          "FAILED": 104,
+          "TIMED_OUT": 48
+        },
+        "slotsHeld": 0,
+        "maxConcurrent": 100,
+        "resolvedCount": 1000,
+        "failureRate": 15.2,
+        "failureThresholdPercent": 100.0,
+        "failureGate": {
+          "epoch": 0,
+          "minimumSample": 20,
+          "sampleSize": 1000,
+          "failureRate": 15.2
+        },
+        "config": {
+          "ack_timeout": 10.0,
+          "http_timeout": 5.0,
+          "lease_seconds": 15.0,
+          "nudge_backoff": 3.0,
+          "inform_timeout": 20.0,
+          "minimum_sample": 20,
+          "nudge_attempts": 3,
+          "result_timeout": 120.0,
+          "scheduler_interval": 0.2,
+          "verification_grace": 3.0,
+          "max_http_concurrency": 20
+        },
+        "createdAt": "2026-10-29T23:52:25.777636+00:00",
+        "completedAt": "2026-10-29T23:55:30.473493+00:00"
+      },
+      "lastObservedAt": "2026-10-29T23:55:31.866736+00:00",
+      "statusRequestFailures": 0,
+      "stopReason": "completed",
+      "campaignId": "8c6b6413-7966-4060-88ee-3dd9fb8fa63a",
+      "simulatorSummary": {
+        "profiles": {
+          "healthy": 815,
+          "revert": 23,
+          "fault": 45,
+          "offline": 48,
+          "reject": 36,
+          "no_tc": 33
+        },
+        "versions": {
+          "2.0.0": 848,
+          "1.0.0": 152
+        },
+        "busy": 0
+      },
+      "elapsedSeconds": 186.115,
+      "finalObservationAgeSeconds": 0.007,
+      "maxObservedSlots": 100,
+      "finishedAt": "2026-10-29T23:55:31.873334+00:00",
+      "successful": true
+    },
+    "audit": {
+      "maxSlots": 100,
+      "minSlots": 0,
+      "finalSlots": 0,
+      "duplicateAuthorizations": 0,
+      "changedCommandKeys": 0,
+      "timeoutsWithoutNudge": 0,
+      "totalAttempts": 1000
+    },
+    "operatorControls": {
+      "campaignId": "8c6b6413-7966-4060-88ee-3dd9fb8fa63a",
+      "pauseStatus": "PAUSED",
+      "authorizationsBeforePauseObservation": 787,
+      "authorizationsAfterPauseObservation": 787,
+      "resumeStatus": "RUNNING",
+      "gateReset": false
+    },
+    "additionalChecks": [
+      "Ruff lint and format",
+      "All Compose profiles expand",
+      "Fresh container logging configuration inspected",
+      "Internal HTTP works with external HTTP proxy still configured",
+      "One controller inventory query",
+      "API and worker metrics",
+      "Audit pagination",
+      "Alembic check: no new upgrade operations"
+    ],
+    "environmentRecovery": "Initial run was invalidated by full cloud root disk; inactive historical demo containers/logs were removed with database volume retained. After adding log retention and internal proxy exclusions, checks were rerun successfully.",
+    "scope": "Accelerated supplied simulator with optional duplicate-response adapter; no new raw-source, standard-timing, 10000-device, or hardware benchmark."
   }
 }
