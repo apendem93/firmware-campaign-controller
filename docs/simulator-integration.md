@@ -198,7 +198,7 @@ The recovery override selects 40 healthy devices, six-second download plus six-s
 | Timeouts and safe retries | Persisted deadlines and nudge leases; no automatic Download retry; recovery tests. |
 | Restart durability | PostgreSQL state and worker reconciliation; actual restart evidence belongs in the measured run report. |
 | Metrics by endpoint/status | API and worker Prometheus endpoints plus transition/request logs; optional adapter callback metrics on simulator port 8001. |
-| Source, configuration, documentation, report | Repository, YAML, README, this integration guide, measured `docs/run-report.md`. |
+| Source, configuration, documentation, report | Repository, YAML, README, this integration guide, [scale validation](scale-validation.md), and [historical validation](run-report.md). |
 | Bonus national-scale design | `docs/scaling.md`. |
 
-The older `simulator/app.py` remains a test fixture, with different probabilities, callback retries, and key deduplication. Its historical run counts must not be presented as evidence from the supplied simulator. The [prototype report](archive/local-simulator-run-report.md) and [raw data](archive/local-simulator-run-data.json) remain archived. New supplied-simulator results are recorded separately in [the current run report](run-report.md).
+`simulator/app.py` remains a regression fixture with different probabilities, callback retries, and key deduplication. Its [archived report](archive/local-simulator-run-report.md) and [raw data](archive/local-simulator-run-data.json) describe that independent implementation. Supplied-simulator evidence is split between [historical 1,000-device validation](run-report.md) and [callback reliability and 5,000/10,000-device validation](scale-validation.md).

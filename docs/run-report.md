@@ -1,6 +1,6 @@
-# Supplied simulator validation report
+# Historical supplied-simulator validation
 
-Initially validated on October 26, 2026 with PostgreSQL 16, Python 3.12, Docker Compose, and the supplied simulator; the submission recheck below was performed on October 29. [Raw progress samples, audit checks, operator-control results, and the submission recheck](run-data.json) are retained. The [earlier prototype report](archive/local-simulator-run-report.md) belongs to the original local simulator and is not evidence from this supplied implementation.
+This report records validation through revision `6ad4a1c` using PostgreSQL 16, Python 3.12, Docker Compose, and the supplied simulator. [Recorded evidence](run-data.json) includes progress samples, audit checks, operator controls, and a deployment recheck. The [scale validation report](scale-validation.md) covers the later callback transport changes and 108-test suite; the [prototype report](archive/local-simulator-run-report.md) covers a separate simulator.
 
 ## Source integrity and test conditions
 
@@ -59,7 +59,7 @@ A second live control test configured 40 rejecting devices and a 0% failure thre
 
 The restart drill verifies durable controller recovery while upgrades are in progress. It does not claim that callbacks emitted during an outage are retried: the supplied simulator drops failed callbacks. Dedicated tests verify that missing ACK alone can still resolve through TransferComplete and that genuinely missing outcome evidence retains its slot safely.
 
-## Submission recheck — October 29, 2026
+## Deployment recheck at `6ad4a1c`
 
 The isolated Docker/PostgreSQL suite passed again: **85 tests in 17.86 seconds**. The cached runtime/test images' checked application, simulator, test, and dependency files matched the repository. No controller or simulator behavior changed during this recheck.
 
@@ -69,7 +69,7 @@ Persisted transition reconstruction confirmed maximum slots 100, minimum zero, n
 
 The recheck exposed two deployment issues: accumulated logs from an inactive historical cloud demo exhausted the root disk, and Docker-injected HTTP proxies routed internal service discovery through an external proxy. The initial runs affected by those issues are not counted as passing validation. Historical demo containers were removed while preserving their database volume. Compose now configures rotating `local` logs (10 MB, three files per container) and upper/lower `NO_PROXY` exclusions for its service names, preserving host exclusions. Fresh containers were inspected for logging settings, and internal discovery/callback HTTP succeeded with the external proxy still configured. Validation was then rerun successfully.
 
-This adds current local-deployment evidence; it does not extend the earlier raw-simulator, restart, normal-timing, hardware, or scale claims.
+This recheck verifies local deployment at `6ad4a1c`; its scope excludes additional raw-simulator, restart, normal-timing, hardware, or scale validation.
 
 ## Reproduction
 

@@ -1,6 +1,6 @@
 # Callback reliability and fleet validation
 
-This report separates the simulator's callback bottleneck from controller state-machine correctness. The supplied `scripts/fw_simulator.py` remains byte-for-byte unchanged; the corrections are selected explicitly with `compose.simulator-fix.yaml`.
+This report records the callback corrections and fleet validation at revision `e653289`, separating the simulator's callback bottleneck from controller state-machine correctness. The supplied `scripts/fw_simulator.py` remains byte-for-byte unchanged; the corrections are selected explicitly with `compose.simulator-fix.yaml`.
 
 [Recorded evidence](scale-run-data.json) includes the failed baselines, diagnostic profiles, source hashes, completed-run progress samples, persisted audits, and resource observations. Profiling and synthetic experiments are kept separate from full campaign measurements.
 

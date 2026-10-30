@@ -1,8 +1,6 @@
-> Historical validation of the original local simulator at commit `1686475`. The current Compose setup uses the supplied AT&T simulator, so the commands and counts below belong to that earlier revision.
+# Archived prototype simulator validation
 
-# Simulator campaign run report
-
-Validated on October 24, 2026 using Docker Compose, PostgreSQL 16, Python 3.12, and the accelerated configuration in `config.demo.yaml`. Raw progress samples and audit checks are in [local-simulator-run-data.json](local-simulator-run-data.json).
+These results and reproduction commands belong to the original local simulator at revision `1686475`, using Docker Compose, PostgreSQL 16, Python 3.12, and accelerated `config.demo.yaml` settings. The current Compose setup uses the supplied AT&T simulator. Raw progress samples and audit checks are in [local-simulator-run-data.json](local-simulator-run-data.json).
 
 ## Reproduction
 
@@ -50,7 +48,7 @@ Campaign `a750fc49-4de3-4ed5-928e-4dd3c10e8ae9` reached **COMPLETED** after **13
 
 ## Findings and limitations
 
-Earlier exploratory runs exposed two issues that were corrected before this run: accelerated periodic traffic could accumulate excessive background callback tasks, and admission could reserve devices without available nudge capacity. The simulator now bounds outstanding periodic work and applies a 30-second minimum periodic interval in accelerated mode. Callback retry delays use real time. The scheduler reserves only the capacity it can claim in the current nudge batch; a regression test protects this invariant.
+The prototype at this revision bounds outstanding periodic work and applies a 30-second minimum periodic interval in accelerated mode. Callback retry delays use real time. The scheduler reserves only the capacity it can claim in the current nudge batch; a regression test protects this invariant. These changes addressed excessive background callback tasks and reservations without available nudge capacity.
 
 Old-version BOOT outcomes intentionally wait for the result deadline, so the last part of the campaign can show little change while valid timers expire. BOOT-based outcomes remain explicit inferences because the assignment protocol provides no command key/event timestamp on BOOT. Firmware images are simulated, not downloaded or installed.
 

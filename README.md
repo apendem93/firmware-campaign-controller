@@ -4,6 +4,27 @@ Python/FastAPI, PostgreSQL, a separate scheduler worker, and the **supplied assi
 
 [The simulator integration guide](docs/simulator-integration.md) explains its functions, profiles, request flow, timing limits, and the corresponding controller code. The older independently written simulator remains an optional regression fixture in `simulator/`; it is no longer the Compose default.
 
+## Implementation and measured results
+
+The callback reliability changes validated at revision `e653289` include:
+
+- **Bounded, separate callback pools:** the optional simulator adapter admits up to 16 periodic and 32 critical callbacks before HTTPX, keeping background traffic from occupying upgrade callback connections.
+- **Transient delivery retries:** up to three total attempts reuse the same payload and command identity. Callback metrics expose queue wait, network duration, retries, and exhausted delivery. Returned commands from duplicate informs are processed.
+- **Accurate deadlines after lock contention:** the controller samples database time after acquiring the campaign lock, preventing expired sessions from authorizing commands or newly issued commands from receiving shortened deadlines.
+
+**108 tests passed** against Docker/PostgreSQL in 15.49 seconds; Ruff lint and formatting checks passed. End-to-end campaigns completed with these outcomes:
+
+| Fleet | Status | Succeeded | Failed | Timed out | Unknown | Measured runtime |
+|---|---|---:|---:|---:|---:|---:|
+| 5,000 | COMPLETED | 4,308 | 456 | 236 | 0 | 14 min 52 s |
+| 10,000 | COMPLETED | 8,601 | 899 | 500 | 0 | 35 min 42 s |
+
+Both runs used the optional callback adapter, accelerated delays, seed 42, `maxConcurrent: 100`, and `failureThresholdPercent: 100` on the same shared Docker host, without adding CPU/RAM or extending controller deadlines. Runtime excludes build and startup. Failures and timeouts matched the injected device profiles; both audits found zero duplicate Download authorizations, zero slot-limit violations, zero unknown transitions, and all slots released at completion. These are measured local runs; runtime on another machine will vary.
+
+The primary diagnosed limitation was **simulator callback pooling and load management**: HTTPcore connection assignment consumed 90.8% of recorded time in a diagnostic profile. The corrected campaigns completed on the same hardware. At 10,000 devices, periodic callbacks still waited an average of 26.3 seconds for admission, extending their effective reporting interval, while command authorization to first ACK had a p99 of 1.001 seconds. The API was the busiest container; its single process, campaign coordination, and database work remain throughput trade-offs whose individual costs were not isolated.
+
+The supplied simulator source remains unchanged, and the adapter is opt-in. Retries do not replay Download or recover a lost response containing the first command. Full conditions, exact runtimes, resource measurements, limits, and reproduction steps are in the [scale validation report](docs/scale-validation.md), with [recorded evidence](docs/scale-run-data.json).
+
 ## Run
 
 Requires Docker Engine and Docker Compose v2. `.env.example` documents optional overrides. Defaults bind host ports to loopback and keep PostgreSQL private. The database password is for local development.
@@ -246,6 +267,11 @@ uv run ruff check .
 uv run ruff format --check .
 ```
 
-Fixtures refuse database names other than `firmware_test` because they recreate tables. Tests cover actual PostgreSQL concurrency, callback ordering, deadlines after lock contention, retry leases, threshold boundaries, pause/resume, and callbacks from the unchanged supplied simulator as well as the prototype fixture. Adapter tests exercise transient retries, lost responses, bounded HTTP admission, and separation of periodic and critical traffic. [The run report](docs/run-report.md) contains historical supplied-simulator outcomes and restart evidence; its 1,000-device adapter runs used the earlier duplicate-response-only implementation at commit `6ad4a1c`. [The scale validation report](docs/scale-validation.md) records the later callback investigation and fleet validation. The earlier [prototype run report](docs/archive/local-simulator-run-report.md) and [raw data](docs/archive/local-simulator-run-data.json) are archived separately and are not supplied-simulator results. [The scaling note](docs/scaling.md) discusses 5/10/15 million devices.
+The validated suite has **108 passing tests**. Fixtures refuse database names other than `firmware_test` because they recreate tables. Coverage includes PostgreSQL concurrency, callback ordering, deadlines after lock contention, retry leases, threshold boundaries, pause/resume, and callbacks from both simulator implementations. Adapter tests cover transient retries, lost responses, bounded admission, and separation of periodic and critical traffic.
+
+- [Scale validation](docs/scale-validation.md): callback investigation, 5,000/10,000-device outcomes, resource measurements, and reproduction steps at `e653289`.
+- [Historical supplied-simulator validation](docs/run-report.md): 1,000-device campaigns, operator controls, restart evidence, and 85 tests through `6ad4a1c`, before the callback transport changes.
+- [Archived prototype validation](docs/archive/local-simulator-run-report.md): separate simulator results and 53 tests at `1686475`; these are not supplied-simulator measurements.
+- [National-scale design](docs/scaling.md): proposed changes for 5/10/15 million devices, separate from measured local capacity.
 
 Scope trade-offs: one active campaign, no automatic rollback or unsafe Download retry, no full auth platform or dashboards, and a memory-only simulator fleet separate from durable controller state. These choices focus on correctness and recovery within the assignment budget.
