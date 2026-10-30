@@ -8,7 +8,7 @@
 b2f0da91e8b9bb7375f46c5e2497d218df588bccdc9b80b196dc3aae95a1c4d8
 ```
 
-The `.txt` file contains executable Python; only its filename/location changed. Ruff excludes this one reference file to preserve its bytes. The controller, tests, and other application code remain linted. The PDF permits simulator corrections or equivalent implementations, but the default integration does not modify the supplied behavior. An explicitly selected adapter can correct one reproduced duplicate-response defect without editing this source; raw and corrected runs are reported separately.
+The `.txt` file contains executable Python; only its filename/location changed. Ruff excludes this one reference file to preserve its bytes. The controller, tests, and other application code remain linted. The PDF permits simulator corrections or equivalent implementations, but the default integration does not modify the supplied behavior. An explicitly selected adapter consumes commands returned to duplicate informs, bounds HTTP callback admission, and retries transient callback failures without editing this source. Raw and adapter runs are reported separately.
 
 The simulator is a separate FastAPI process. It uses neither controller database models nor controller transition functions. Docker Compose connects the two services over HTTP:
 
@@ -99,7 +99,7 @@ The simulator does not fetch `imageUrl`, validate an image signature, or install
 | `LATE_EXTRA_SEC` | 600 | 60 |
 | Controller inform / ACK / result deadline | 90 / 30 / 900 seconds | 20 / 10 / 120 seconds |
 
-The supplied simulator requires `LATE_EXTRA_SEC >= 60`, even in accelerated mode. The standard result deadline covers up to 20 + 240 + 600 = 860 seconds of simulated delay plus callback allowance. The demo retains delayed completions while allowing enough room for 1 + 3 + 60 seconds and transport/queue overhead. Do not combine demo controller deadlines with standard simulator delays.
+The supplied simulator requires `LATE_EXTRA_SEC >= 60`, even in accelerated mode. The standard result deadline covers up to 20 + 240 + 600 = 860 seconds of simulated delay plus callback allowance. The demo allows 120 seconds for results versus up to 1 + 3 + 60 seconds of configured device delays; callback queueing can still exceed that allowance under load. Do not combine demo controller deadlines with standard simulator delays. `DEVICE_COUNT` is configurable, and the controller accepts inventory up to 10,000 devices; this does not change the campaign's independent `maxConcurrent` limit. See [scale validation](scale-validation.md) for measured conditions and outcomes.
 
 ```sh
 # Supplied simulator, original timing defaults
@@ -108,7 +108,7 @@ docker compose up --build -d
 # Same raw source and failure probabilities, shorter supported timing values
 docker compose -f compose.yaml -f compose.demo.yaml up --build -d
 
-# Recommended mixed-fleet local demo with the isolated response-consumption correction
+# Local demo with duplicate-response handling and bounded, retried callbacks
 docker compose -f compose.yaml -f compose.demo.yaml -f compose.simulator-fix.yaml up --build -d
 ```
 
@@ -120,17 +120,18 @@ uv run python scripts/run_campaign.py --campaign-id CAMPAIGN_ID --halt-drain-sec
 
 The runner does not create a new campaign when `--campaign-id` is supplied and does not resume a halted one. It saves the initial halt snapshot and final observation, including its age and stop reason. Optional `--simulator-summary-url http://127.0.0.1:8001/_admin/summary` captures interviewer diagnostics only after monitoring; it never drives the controller's state machine or success decision. When using `--restart-after`, supply `--compose-project` and repeat `--compose-file` for the actual stack, especially if monitoring a controller on a nondefault port. For a clean independent test, intentionally reset the project with `docker compose down -v` before startup; that command deletes local campaign history. To preserve history, use a separate Compose project and nonconflicting host ports instead.
 
-## Reliability limits exposed by this simulator
+## Reliability limits of the raw supplied simulator
 
 1. **No Download deduplication.** There is no persistent set of completed command keys. A second Download may be rejected while busy or executed again after busy clears. The controller never assumes that key reuse makes installation safe; it does not automatically retransmit Download.
 2. **Callback errors are not retried.** `post()` logs HTTP/transport errors and returns `None`. A controller restart can coincide with a lost acknowledgment, BOOT, or TransferComplete. Persisted controller state survives, but missing device evidence cannot be invented. Missing ACK alone waits; a dispatched command with no outcome evidence becomes OUTCOME_UNKNOWN, retains its slot, and halts new dispatch.
 3. **Duplicate inform responses are ignored.** `duplicate_post()` sends the callback but discards the response body. If an unkeyed periodic/BOOT inform originally arrived before admission and its duplicate arrives after admission, the controller cannot distinguish it from a new session and might return the first Download to a caller that discards it. There is no session/event ID in the assignment schema. Guaranteeing delivery or exactly-once session handling requires a protocol extension; unsafe redispatch is not a valid workaround.
 4. **BOOT is uncorrelated evidence.** BOOT carries no command key/event timestamp. Target-version BOOT supports inferred success for the sole active attempt; old-version BOOT alone waits for a deadline. Stale BOOT ambiguity is documented rather than hidden.
 5. **Busy can outlive inferred success.** On a late path, the simulator remains busy until it sends delayed TransferComplete, even after BOOT reports target firmware. Controller concurrency counts tracked upgrade attempts, not an unknowable device-side busy flag. It never polls the admin endpoint to manufacture stronger guarantees.
+6. **Callbacks share an unbounded admission path.** Periodic informs, ACKs, BOOTs, and completions all enter one HTTPX client, configured for up to 500 connections with the default 20 idle connections. The simulator does not limit callback admission before this pool. A growing request queue adds client-side work and can delay upgrade callbacks; `handle_download()` waits for the ACK request before starting its simulated download/reboot delays. The [scale investigation](scale-validation.md) separates this delay from controller request processing.
 
 Pause stops new command authorization; already authorized replies and existing device operations can continue. Resume after a failure-threshold halt is explicit and starts a new gate sample. Unknown outcomes must be reconciled by later evidence before resuming. These policies preserve correctness when the supplied transport behavior makes a complete, successful fleet run impossible under a particular interruption.
 
-## Optional duplicate-response correction
+## Optional callback corrections
 
 A raw mixed-fleet validation reproduced a command-delivery hole in `duplicate_post()`. The sequence is:
 
@@ -139,13 +140,41 @@ A raw mixed-fleet validation reproduced a command-delivery hole in `duplicate_po
 3. The duplicate is indistinguishable from a usable new session under the supplied schema. The controller durably authorizes its first Download and includes it in the response.
 4. Raw `duplicate_post()` discards that response, so no download starts and no acknowledgment or completion is sent. The controller truthfully reaches OUTCOME_UNKNOWN and retains the slot.
 
-`simulator/supplied_adapter.py` overrides only the duplicated callback sender at runtime. For an inform response, it reads returned DOWNLOAD commands and passes each to the original `handle_download()`, matching the behavior of the original `inform()` function. It reuses the supplied inventory, nudge endpoints, lifecycle, RNG, delays, profiles, and download handler. The original source checksum remains unchanged. A focused regression test exercises the PENDING-to-admitted sequence and the corrected command execution path.
+`simulator/supplied_adapter.py` temporarily replaces `post()` and `duplicate_post()` during its lifespan and restores them at shutdown, including startup failures. Returned DOWNLOAD commands from duplicate informs go to the original `handle_download()`, matching the original `inform()` behavior. The adapter reuses the supplied inventory, nudge endpoints, device tasks, profile/timing RNG, configured delays, probabilities, and download handler. A separate RNG supplies retry jitter. The source checksum remains unchanged.
 
-Select it with `-f compose.simulator-fix.yaml` after the base and optional demo files. This is an opt-in simulator correction, not a controller workaround. It adds no callback retries or command-key deduplication, does not suppress faults/duplicates/late behavior, and cannot recover callbacks lost during an outage. The default Compose command remains the raw supplied simulator for evaluator parity. Reports identify which variant was run; corrected results must not be labeled raw-simulator results.
+`simulator/callback_transport.py` admits requests through semaphores **before** calling HTTPX. Periodic informs have their own client and budget; ACK, BOOT, TransferComplete, connection-request informs, and other callbacks use a separate critical client. Each pool's connection and idle-connection limits match its budget, with a four-second keepalive expiry. Periodic requests therefore cannot occupy the critical pool's connections. This limits concurrent HTTP work, not the number of waiting device tasks: admission wait has no absolute expiry and is measured separately from network time.
+
+All callback kinds retain the same payload, command key, and device timestamps across delivery attempts. Transport failures, whole-attempt timeouts, HTTP 429, and HTTP 5xx are retried; other HTTP errors and malformed success responses are not. Each network attempt has both HTTPX phase timeouts and a whole-attempt timeout. Backoff is exponential with jitter. A valid numeric or HTTP-date `Retry-After` is honored when its delay fits the configured maximum; a longer requested delay stops delivery attempts rather than retrying earlier than the server permits. HTTP permits are released during backoff. After the final unsuccessful attempt or an excessive requested delay, the callback is logged and counted as exhausted.
+
+Select the adapter with `-f compose.simulator-fix.yaml` after the base and optional demo files. That override forwards these variables from the shell or `.env`:
+
+| Variable | Default | Meaning |
+|---|---:|---|
+| `SIM_CALLBACK_PERIODIC_CONCURRENCY` | 16 | Maximum admitted periodic HTTP attempts; 1–128. |
+| `SIM_CALLBACK_CRITICAL_CONCURRENCY` | 32 | Maximum admitted critical HTTP attempts; 1–128. |
+| `SIM_CALLBACK_MAX_ATTEMPTS` | 3 | Total attempts per callback, including the first; 1–10. |
+| `SIM_CALLBACK_REQUEST_TIMEOUT` | 5 | Seconds per network attempt; greater than 0, at most 60. Excludes admission wait and backoff. |
+| `SIM_CALLBACK_RETRY_BASE_DELAY` | 0.2 | Initial exponential-backoff basis in seconds; greater than 0, at most 10. |
+| `SIM_CALLBACK_MAX_RETRY_DELAY` | 2 | Maximum backoff delay in seconds; greater than 0, at most 30. |
+
+At the defaults, each callback receives at most **three attempts, not three retries**. Total delivery time can exceed three network timeouts because admission wait and backoff are additional. The adapter preserves duplicate injection without recursively duplicating duplicates, and it does not suppress failure profiles or late completions. Changed callback scheduling can change the shared timing RNG's sequence, as it can in any asynchronous run.
+
+The adapter alone exposes `GET /metrics` on simulator port 8001:
+
+- `simulator_callback_requests_total`: callback kind, HTTP status, and attempt outcome.
+- `simulator_callback_retries_total` and `simulator_callback_exhausted_total`: retry and failed-delivery counts by callback kind.
+- `simulator_callback_queue_seconds` and `simulator_callback_request_seconds`: admission wait by traffic class and network duration by callback kind.
+- `simulator_callback_queued` and `simulator_callback_inflight`: current waiting and admitted HTTP work by traffic class.
+
+Labels exclude device IDs and command keys. These are in-memory simulator transport metrics and reset on restart; controller audit records remain in PostgreSQL. The raw supplied simulator does not expose this endpoint.
+
+Callback retries do **not** replay Download or add command-key deduplication. If the controller commits a first Download but its response is lost, retrying the inform does not recover that command: the controller will not authorize it again, and the attempt can remain unknown. BOOT also remains unkeyed; retries do not remove stale-event ambiguity across campaigns. Prolonged outages or exhausted attempts can still lose outcome evidence. The controller's slot retention and safety halt remain necessary.
+
+The default Compose command retains the raw supplied simulator for evaluator parity, and external evaluators need no adapter-specific API changes. Reports identify the variant and revision tested; adapter results must not be labeled raw-simulator results. The historical 1,000-device results at commit `6ad4a1c` used the earlier duplicate-response-only adapter. The later transport investigation and fleet results belong to [scale validation](scale-validation.md).
 
 ## Controlled restart drill
 
-The mixed-fleet simulator can lose a callback if the API is restarted at an arbitrary instant. A separate controlled drill isolates the requirement that persisted controller work survives a restart:
+The raw mixed-fleet simulator can lose a callback if the API is restarted at an arbitrary instant. The following drill uses that raw simulator and isolates the requirement that persisted controller work survives a restart:
 
 ```sh
 # Stop the default project to free host ports; its database volume is retained.
@@ -168,7 +197,7 @@ The recovery override selects 40 healthy devices, six-second download plus six-s
 | Minimum-sample automatic halt | Durable gate epoch and strict threshold comparison; threshold boundary tests. |
 | Timeouts and safe retries | Persisted deadlines and nudge leases; no automatic Download retry; recovery tests. |
 | Restart durability | PostgreSQL state and worker reconciliation; actual restart evidence belongs in the measured run report. |
-| Metrics by endpoint/status | API and worker Prometheus endpoints plus transition/request logs. |
+| Metrics by endpoint/status | API and worker Prometheus endpoints plus transition/request logs; optional adapter callback metrics on simulator port 8001. |
 | Source, configuration, documentation, report | Repository, YAML, README, this integration guide, measured `docs/run-report.md`. |
 | Bonus national-scale design | `docs/scaling.md`. |
 

@@ -12,7 +12,7 @@ SHA-256 b2f0da91e8b9bb7375f46c5e2497d218df588bccdc9b80b196dc3aae95a1c4d8
 
 Both mixed-fleet runs used 1,000 devices, seed 42, target 2.0.0, maxConcurrent 100, and failureThresholdPercent 100 to observe the full fleet. Both retained the supplied profile probabilities, 5% duplicate callbacks, and 5% late completions. The supported demo environment used download 0–1 seconds, reboot 1–3 seconds, periodic informs every 30 seconds, and late delay 60 seconds. Controller inform/ACK/result deadlines were 20/10/120 seconds. These are accelerated functional runs, not measurements using the simulator's normal multi-minute timing defaults.
 
-The optional adapter changes only the handling of commands returned to duplicated inform requests. It does not change device profiles, probabilities, firmware changes, busy handling, callback retry behavior, or Download deduplication.
+The adapter used for the historical runs below, through revision `6ad4a1c`, changed only the handling of commands returned to duplicated inform requests. It did not change device profiles, probabilities, firmware changes, busy handling, callback retry behavior, or Download deduplication. The later bounded callback transport, reliability tests, and larger-fleet investigation are recorded separately in [scale validation](scale-validation.md).
 
 ## Observed results
 
@@ -73,6 +73,8 @@ This adds current local-deployment evidence; it does not extend the earlier raw-
 
 ## Reproduction
 
+To reproduce the historical implementation and measurements in this report, use a separate checkout of revision `6ad4a1c`, with `DEVICE_COUNT=1000`, `SEED=42`, and no other simulator/profile overrides. At a newer revision the corrected command selects the newer callback transport; those results belong to [scale validation](scale-validation.md), not this historical table.
+
 Run each mixed-fleet case with a fresh simulator and no active campaign. The commands below use separate projects sequentially, preserving their database volumes. Stop any other stack occupying ports 8000/8001/9001 first. If these project names have already been used, select new names for a fresh cohort rather than deleting history unintentionally.
 
 ```sh
@@ -89,4 +91,4 @@ uv run python scripts/run_campaign.py --halt-drain-seconds 150 --simulator-summa
 
 The raw runner intentionally exits nonzero when the campaign remains HALTED. A fixed seed reproduces profiles, but shared asynchronous timing randomness means the number of discarded duplicate responses is not guaranteed to be four on every run. The controlled recovery commands are in the [README](../README.md); the full function mapping and limitations are in the [integration guide](simulator-integration.md).
 
-No 10,000-device load benchmark, normal-timing fleet run, public deployment, or real firmware installation is claimed. The assignment's remaining production evolution concerns are documented in [the scaling note](scaling.md).
+The historical runs in this report did not include a 10,000-device benchmark, normal-timing fleet run, public deployment, or real firmware installation. See [the later scale validation report](scale-validation.md) for the callback investigation and subsequent fleet tests. The assignment's remaining production evolution concerns are documented in [the scaling note](scaling.md).

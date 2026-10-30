@@ -216,6 +216,64 @@ async def test_inform_after_admission_deadline_cannot_dispatch(client, database)
     assert await state(database) == "TIMED_OUT"
 
 
+@pytest.mark.parametrize("expires_while_waiting", [False, True])
+async def test_queued_inform_uses_time_after_campaign_lock(
+    client, database, monkeypatch, expires_while_waiting
+):
+    from controller import service
+
+    campaign_id = await create(client, database)
+    await reserve(database)
+    waiting = asyncio.Event()
+    original_lock = service.lock_campaign
+
+    async def observe_lock_wait(session, identifier):
+        waiting.set()
+        return await original_lock(session, identifier)
+
+    monkeypatch.setattr(service, "lock_campaign", observe_lock_wait)
+    request = None
+    try:
+        async with database.begin() as session:
+            campaign = await session.scalar(
+                select(Campaign).where(Campaign.id == uuid.UUID(campaign_id)).with_for_update()
+            )
+            request = asyncio.create_task(client.post("/devices/device-1/inform", json=inform()))
+            await asyncio.wait_for(waiting.wait(), timeout=10)
+            assert not request.done()
+            released_at = await session.scalar(select(func.clock_timestamp()))
+            if expires_while_waiting:
+                row = await session.scalar(
+                    select(CampaignDevice).where(CampaignDevice.device_id == "device-1")
+                )
+                # Put expiry inside the lock wait without relying on a timed sleep.
+                row.inform_deadline = released_at
+        response = await asyncio.wait_for(request, timeout=10)
+    finally:
+        if request is not None and not request.done():
+            request.cancel()
+            await asyncio.gather(request, return_exceptions=True)
+
+    assert response.status_code == 200
+    async with database() as session:
+        row = await session.scalar(
+            select(CampaignDevice).where(CampaignDevice.device_id == "device-1")
+        )
+        if expires_while_waiting:
+            assert response.json() == {"commands": []}
+            assert row.state == "TIMED_OUT"
+            assert row.command_key is None
+        else:
+            assert len(response.json()["commands"]) == 1
+            assert row.dispatched_at >= released_at
+            assert row.ack_deadline - row.dispatched_at == timedelta(
+                seconds=campaign.tuning["ack_timeout"]
+            )
+            assert row.result_deadline - row.dispatched_at == timedelta(
+                seconds=campaign.tuning["result_timeout"]
+            )
+
+
 async def test_admission_reserves_only_immediately_available_nudge_capacity(client, database):
     campaign_id = await create(client, database, maxConcurrent=5)
     async with database.begin() as session:

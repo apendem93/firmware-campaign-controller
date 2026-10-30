@@ -1,4 +1,11 @@
-# Optional simulator-only correction. The supplied source and controller stay unchanged.
+# Optional simulator callback corrections. The supplied reference file stays unchanged.
 services:
   simulator:
     command: ["uvicorn", "simulator.supplied_adapter:app", "--host", "0.0.0.0", "--port", "8001"]
+    environment:
+      SIM_CALLBACK_PERIODIC_CONCURRENCY: ${SIM_CALLBACK_PERIODIC_CONCURRENCY:-16}
+      SIM_CALLBACK_CRITICAL_CONCURRENCY: ${SIM_CALLBACK_CRITICAL_CONCURRENCY:-32}
+      SIM_CALLBACK_MAX_ATTEMPTS: ${SIM_CALLBACK_MAX_ATTEMPTS:-3}
+      SIM_CALLBACK_REQUEST_TIMEOUT: ${SIM_CALLBACK_REQUEST_TIMEOUT:-5}
+      SIM_CALLBACK_RETRY_BASE_DELAY: ${SIM_CALLBACK_RETRY_BASE_DELAY:-0.2}
+      SIM_CALLBACK_MAX_RETRY_DELAY: ${SIM_CALLBACK_MAX_RETRY_DELAY:-2}

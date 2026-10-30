@@ -25,13 +25,13 @@ For an accelerated run with the raw supplied behavior, start with this configura
 docker compose -f compose.yaml -f compose.demo.yaml up --build -d
 ```
 
-The raw simulator has a reproduced defect: its duplicate-inform callback discards commands in the HTTP response. For a complete local mixed-fleet demonstration, an opt-in simulator-only adapter consumes those commands through the original download handler:
+The raw simulator has a reproduced defect: its duplicate-inform callback discards commands in the HTTP response. An opt-in simulator adapter consumes those commands, separates periodic traffic from upgrade callbacks, and retries transient callback failures:
 
 ```sh
 docker compose -f compose.yaml -f compose.demo.yaml -f compose.simulator-fix.yaml up --build -d
 ```
 
-The adapter leaves the supplied file byte-for-byte unchanged. It does not add callback retries, command-key deduplication, or change probabilities, timing, or firmware behavior. The raw two-file command remains available for evaluator parity. See [the precise correction and its limits](docs/simulator-integration.md#optional-duplicate-response-correction). Use a fresh project/volume when switching scenarios: restarting the simulator resets its fleet, while PostgreSQL retains campaign history.
+The adapter leaves the supplied file byte-for-byte unchanged and preserves its device profiles, configured delays, fault probabilities, and firmware behavior. It limits HTTP admission to 16 periodic and 32 critical callbacks by default, using separate connection pools. Transient failures receive up to three total attempts with the same payload. It adds no Download replay or command-key deduplication. The raw two-file command remains available for evaluator parity. See [the callback corrections and their limits](docs/simulator-integration.md#optional-callback-corrections). Use a fresh project/volume when switching scenarios: restarting the simulator resets its fleet, while PostgreSQL retains campaign history.
 
 ### Windows PowerShell: port already allocated
 
@@ -63,6 +63,8 @@ The new API is then at <http://localhost:8010/docs>. These variables apply to su
 ### Create and inspect a campaign
 
 The demo changes only supported environment settings: download 0–1 seconds, reboot 1–3 seconds, periodic informs every 30 seconds, and late completion delay 60 seconds. Duplicate and late-callback probabilities remain enabled. Its controller result deadline is 120 seconds; reverted devices deliberately wait that deadline before failure classification. The standard profile preserves the supplied defaults (download up to 20 seconds, reboot up to 240 seconds, late delay up to 600 seconds) and uses a 900-second result deadline. Use the standard profile for realistic evaluator timings.
+
+`DEVICE_COUNT` defaults to 1,000 and can be set in `.env` for a fresh fleet; the controller accepts inventory up to 10,000 devices. This is separate from `maxConcurrent`, which limits upgrade slots. The [scale validation report](docs/scale-validation.md) distinguishes measured fleet outcomes, callback delays, resource observations, and remaining limits; do not infer larger-fleet runtime by multiplying a 1,000-device result.
 
 ```sh
 curl -fsS http://127.0.0.1:8000/campaigns \
@@ -101,7 +103,7 @@ uv run python scripts/run_campaign.py --concurrency 40 --restart-after 5 --halt-
 
 `compose.recovery.yaml` selects 40 healthy devices, fixed six-second download and reboot delays, and no duplicate/late callbacks. This separates the planned outage from normal result emission and tests persisted controller state; it supplements the mixed-fleet test rather than replacing it. Use a fresh recovery project for repeatable enrollment. The explicit Compose project/files select the stack being tested; adjust them if you use another project.
 
-This restarts only API and worker, leaving the simulator and database running. The supplied simulator does not retry failed callbacks, so a callback emitted while the API is unavailable can be lost permanently. The controller preserves state and handles late evidence, but it cannot reconstruct an unreported result. An unresolved dispatched operation retains its slot and can halt the campaign; that is a truthful recovery outcome, not a reason to resend Download. The runner saves halted results and never automatically resumes a safety halt.
+This restarts only API and worker, leaving the simulator and database running. This drill uses the raw supplied simulator, which does not retry failed callbacks; a callback emitted while the API is unavailable can be lost permanently. The optional adapter retries transient callback failures, but its attempt limit can be exhausted and a lost response containing the first Download cannot be recovered by replaying the callback. The controller preserves state and handles late evidence, but it cannot reconstruct an unreported result. An unresolved dispatched operation retains its slot and can halt the campaign; that is a truthful recovery outcome, not a reason to resend Download. The runner saves halted results and never automatically resumes a safety halt.
 
 Simulator state is in memory: restarting it resets firmware versions. PostgreSQL's named volume retains campaigns. `docker compose down` preserves that volume; use `down -v` only when intentionally discarding campaign history.
 
@@ -115,7 +117,7 @@ SIMULATOR_URL=https://your-simulator.example docker compose up --build -d postgr
 
 Configure the external simulator's `CONTROLLER_URL` to a reachable controller address. Container-local `localhost` is not another container. External machines require an explicitly configured reachable listener/network route; defaults are loopback-only. Public deployment additionally needs operator authentication and device identity verification.
 
-The optional duplicate-response adapter is local test infrastructure; external evaluator integration continues to use the unchanged controller protocol. The controller calls only the two specified simulator APIs. It never calls the supplied `/_admin/summary` endpoint or polls inventory to determine completion. That summary is for evaluator/run-report comparison only. Versions are opaque strings. The supplied simulator sends `startTime` and `completeTime` as Unix epoch seconds, which Pydantic accepts and normalizes. ISO-8601 values are also accepted; timezone-free ISO values are interpreted as UTC. Scheduler deadlines use PostgreSQL receipt time, not device clocks.
+The optional callback adapter is local test infrastructure; external evaluator integration continues to use the unchanged controller protocol. The controller calls only the two specified simulator APIs. It never calls the supplied `/_admin/summary` endpoint or polls inventory to determine completion. That summary is for evaluator/run-report comparison only. Versions are opaque strings. The supplied simulator sends `startTime` and `completeTime` as Unix epoch seconds, which Pydantic accepts and normalizes. ISO-8601 values are also accepted; timezone-free ISO values are interpreted as UTC. Deadlines use PostgreSQL time rather than device clocks. Inform processing samples that time after acquiring the attempt's campaign lock so lock waits cannot shorten new deadlines or authorize an expired session.
 
 | Owner | Endpoint | Purpose |
 |---|---|---|
@@ -224,6 +226,8 @@ The supplied simulator settings and profiles are documented in [the integration 
 
 API metrics include incoming counts/latencies by route template, method, and status; outgoing discovery; callback classifications; active state/slot gauges; durable outcomes by evidence; timeout transitions; and recorded nudge retries. Worker metrics include outgoing nudges and heartbeat. Process counters reset on restart; database progress does not. JSON logs carry transition identity/reason. IDs are excluded from metric labels. Responses include `X-Request-ID`. `/readyz` verifies database/schema; `/healthz` checks liveness.
 
+With `compose.simulator-fix.yaml`, simulator port 8001 also exposes `/metrics`: callback attempts by kind/status/outcome, retries and exhausted delivery, queue wait and HTTP duration, and queued/in-flight callbacks by periodic or critical traffic. The raw supplied simulator has no metrics endpoint. `.env.example` exposes the six `SIM_CALLBACK_*` settings forwarded by that override; their defaults and limits are in [the integration guide](docs/simulator-integration.md#optional-callback-corrections). Queue wait is measured separately and has no absolute expiry, so the per-attempt network timeout is not a bound on total callback latency.
+
 ## Validation and deliverables
 
 Run tests with a disposable PostgreSQL database:
@@ -242,6 +246,6 @@ uv run ruff check .
 uv run ruff format --check .
 ```
 
-Fixtures refuse database names other than `firmware_test` because they recreate tables. Tests cover actual PostgreSQL concurrency, callback ordering, deadlines, retry leases, threshold boundaries, pause/resume, and callbacks from the unchanged supplied simulator as well as the prototype fixture. [The run report](docs/run-report.md) contains measured supplied-simulator outcomes and restart evidence. The earlier [prototype run report](docs/archive/local-simulator-run-report.md) and [raw data](docs/archive/local-simulator-run-data.json) are archived separately and are not supplied-simulator results. [The scaling note](docs/scaling.md) discusses 5/10/15 million devices.
+Fixtures refuse database names other than `firmware_test` because they recreate tables. Tests cover actual PostgreSQL concurrency, callback ordering, deadlines after lock contention, retry leases, threshold boundaries, pause/resume, and callbacks from the unchanged supplied simulator as well as the prototype fixture. Adapter tests exercise transient retries, lost responses, bounded HTTP admission, and separation of periodic and critical traffic. [The run report](docs/run-report.md) contains historical supplied-simulator outcomes and restart evidence; its 1,000-device adapter runs used the earlier duplicate-response-only implementation at commit `6ad4a1c`. [The scale validation report](docs/scale-validation.md) records the later callback investigation and fleet validation. The earlier [prototype run report](docs/archive/local-simulator-run-report.md) and [raw data](docs/archive/local-simulator-run-data.json) are archived separately and are not supplied-simulator results. [The scaling note](docs/scaling.md) discusses 5/10/15 million devices.
 
 Scope trade-offs: one active campaign, no automatic rollback or unsafe Download retry, no full auth platform or dashboards, and a memory-only simulator fleet separate from durable controller state. These choices focus on correctness and recovery within the assignment budget.

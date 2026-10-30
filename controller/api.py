@@ -326,7 +326,6 @@ async def inform(device_id: str, body: Inform):
     if device_id != body.deviceId:
         raise HTTPException(422, "Path and body deviceId must match")
     async with sessions.begin() as session:
-        now = await db_now(session)
         if body.transferComplete:
             campaign, attempt = await keyed_attempt(
                 session, device_id, body.transferComplete.commandKey
@@ -345,6 +344,8 @@ async def inform(device_id: str, body: Inform):
         else:
             campaign, attempt = await active_attempt(session, device_id)
         device = await session.get(Device, device_id)
+        # Campaign-lock waits must not shorten new deadlines or admit expired sessions.
+        now = await db_now(session)
         if device:
             device.firmware = body.firmwareVersion
             device.last_event = body.event
